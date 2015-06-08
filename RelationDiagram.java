@@ -195,24 +195,36 @@ public class RelationDiagram {
 	}
 	
 	public Integer compare(RelationDiagram diagramComparedTo) {
+		
+		// Create temporary diagram to be able to make changes
 		RelationDiagram tempDiagram = new RelationDiagram();
 		tempDiagram.buildDiagram(diagramComparedTo.ravensFigure);
 		
+		// Difference to return
 		Integer difference = 0;
+		
+		// Increment Difference for items deleted or added
 		Integer numShapesDifference = Math.abs(this.numShapes - tempDiagram.numShapes);
 		difference += (numShapesDifference*5);
 		
 		
-		
 		Integer numShapesMatched = 0;
+		
+		// Iterate through shapes of figure 1
 		for (int i = 0; i < this.numShapes; i++) {
+			
+			// Possible matches array
 			List<RavensObject> possibleShapeMatches = new ArrayList<RavensObject>();
+			
+			// Iterate through shapes of figure 2 and try to find possible matches.
 			for (int j = 0; j < tempDiagram.numShapes; j++) {
 				if (this.ravensObjectArray.get(i).getAttributes().get("shape").equals(tempDiagram.ravensObjectArray.get(j).getAttributes().get("shape"))) {
 					possibleShapeMatches.add(tempDiagram.ravensObjectArray.get(j));
 				}
 			}
 			
+			
+			// Find the match with the least difference out of the possible matches
 			Integer leastDifference = 9999;
 			Integer leastMatchIndex = -1;
 			for (int j = 0; j < possibleShapeMatches.size(); j++) {
@@ -222,16 +234,16 @@ public class RelationDiagram {
 					tempDifference += 1;
 				}
 				if (coalesce(this.ravensObjectArray.get(i).getAttributes().get("angle"), "null").equals(coalesce(possibleShapeMatches.get(j).getAttributes().get("angle"), "null")) == false) {
-					tempDifference += 1;
+					tempDifference += 2;
 				}
 				if (coalesce(this.ravensObjectArray.get(i).getAttributes().get("alignment"), "null").equals(coalesce(possibleShapeMatches.get(j).getAttributes().get("alignment"), "null")) == false) {
-					tempDifference += 1;
+					tempDifference += 2;
 				}
 				if (coalesce(this.ravensObjectArray.get(i).getAttributes().get("size"), "null").equals(coalesce(possibleShapeMatches.get(j).getAttributes().get("size"), "null")) == false) {
-					tempDifference += 1;
+					tempDifference += 6;
 				}
 				if (coalesce(this.relationSentencesHashMap.get(this.ravensObjectArray.get(i).getName()), "null").equals(coalesce(tempDiagram.relationSentencesHashMap.get(possibleShapeMatches.get(j).getName()), "null")) == false) {
-					tempDifference += 1;
+					tempDifference += 4;
 				}
 				
 				if (tempDifference < leastDifference) {
@@ -242,10 +254,13 @@ public class RelationDiagram {
 			
 			difference += leastDifference;
 			
+			// Remove the matched shape
 			if (leastMatchIndex != -1) {
 				for (int j = 0; j < tempDiagram.numShapes; j++) {
 					if (tempDiagram.ravensObjectArray.get(j).getName().equals(possibleShapeMatches.get(leastMatchIndex).getName())) {
 						tempDiagram.ravensObjectArray.remove(j);
+						tempDiagram.numShapes-=1;
+						break;
 					}
 				}
 			

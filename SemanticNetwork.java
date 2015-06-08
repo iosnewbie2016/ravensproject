@@ -42,13 +42,13 @@ public class SemanticNetwork {
 				case ("shape"):
 					tempWeightShape += 7;
 				break;
-				case ("alignment"):
+				case ("size"):
 					tempWeightShape += 6;
 				break;
 				case ("angle"):
-					tempWeightShape += 5;
+					tempWeightShape += 4;
 				break;
-				case ("size"):
+				case ("alignment"):
 					tempWeightShape += 4;
 				break;
 				case ("fill"):

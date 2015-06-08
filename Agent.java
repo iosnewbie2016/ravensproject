@@ -1,6 +1,7 @@
 package ravensproject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 // Uncomment these lines to access image processing.
@@ -233,19 +234,177 @@ public class Agent {
 		
 		// EASY CASE: SAME NUMBER OF SHAPES
 		if (numShapesDeleted == 0) {
-			Integer numRelationshipMatches = 0;
-			
-			
-			// FIGURE A has more than one shape
-			if (figureARelationDiagram.numShapes > 1) {
-				for (int i = 0; i < figureARelationDiagram.relationType.size(); i ++) {
+						
+			// FIGURE A and B have more than one shape
+			if (numShapesA > 1) {
+				
+				
+				// Look at relationships that figures have against one another.
+				Integer numRelationshipMatches = 0;
+				
+				int possibleObjectsMatchedWeight[][] = new int[numShapesA][numShapesB];
+				
+				//Will compare each object in Figure A to each object in Figure B and build the possibleObjectsMatchedWeight matrix
+				//When comparison is over, the relationships with the least amount of weight will be considered.
+				
+				// Iterate through each object in A
+				for (int i = 0; i < figureARelationDiagram.ravensObjectArray.size(); i ++) {
+    				Integer numRelationsA = 0;
+    				List<String> typesRelationsA = new ArrayList<String>();
     				
-    				if (figureARelationDiagram.relationType.get(i) == figureBRelationDiagram.relationType.get(i)) {
+    				// Look at relationships between current object in figure A and all others in Figure B
+					for (int j = 0; j < figureARelationDiagram.relations[i].length; j++) {
+						if (figureARelationDiagram.relations[i][j] != null) {
+							numRelationsA++;
+							typesRelationsA.add(figureARelationDiagram.relations[i][j]);
+						}
+					}
+					
+					// Iterate through each object in B
+					for (int j = 0; j < figureBRelationDiagram.ravensObjectArray.size(); j++) {
+						Integer numRelationsB = 0;
+	    				List<String> typesRelationsB = new ArrayList<String>();
+	    				
+	    				//RELATIONSHIPS
+	    				
+	    				// Look at relationships between current object in figure A and all others in Figure B
+	    				for (int k = 0; k < figureBRelationDiagram.relations[j].length; k++) {
+							if (figureBRelationDiagram.relations[j][k] != null) {
+								numRelationsB++;
+								typesRelationsB.add(figureBRelationDiagram.relations[j][k]);
+							}
+						}
+	    				
+	    				Integer numUnmatchedRelations = 0;
+	    				List<String> tempTypesRelationsA = new ArrayList<String>();
+    					tempTypesRelationsA = typesRelationsA;
+    					List<String> tempTypesRelationsB = new ArrayList<String>();
+    					tempTypesRelationsB = typesRelationsB;
     					
-    					
-    					numRelationshipMatches++;
-    				}
-				}	
+	    				for (int k = 0; k < numRelationsA; k++) {
+	
+	    					for (int l = 0; l < numRelationsB; l++) {
+	    						if (tempTypesRelationsA.get(k).equals(tempTypesRelationsB.get(l))) {
+	    							tempTypesRelationsA.remove(k);
+	    							tempTypesRelationsB.remove(l);
+	    						}
+	    					}
+	    				}
+	    				
+	    				numUnmatchedRelations += tempTypesRelationsA.size();
+	    				numUnmatchedRelations += tempTypesRelationsB.size();
+	    				
+	    				possibleObjectsMatchedWeight[i][j]+=numUnmatchedRelations*1;
+	    				
+	    				// Comparison of OTHER ATTRIBUTES
+	    				
+	    				if (coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(i)).getAttributes().get("size"),"null").equals(coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(j)).getAttributes().get("size"), "null")) == false) {
+	    					possibleObjectsMatchedWeight[i][j]+=4;
+	    				}
+	    				if (coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(i)).getAttributes().get("alignment"),"null").equals(coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(j)).getAttributes().get("alignment"), "null")) == false) {
+	    					possibleObjectsMatchedWeight[i][j]+=2;
+	    				}
+	    				if (coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(i)).getAttributes().get("angle"),"null").equals(coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(j)).getAttributes().get("angle"), "null")) == false) {
+	    					possibleObjectsMatchedWeight[i][j]+=2;
+	    				}
+	    				if (coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(i)).getAttributes().get("shape"),"null").equals(coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(j)).getAttributes().get("shape"), "null")) == false) {
+	    					possibleObjectsMatchedWeight[i][j]+=3;
+	    				}
+	    				if (coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(i)).getAttributes().get("fill"),"null").equals(coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(j)).getAttributes().get("shape"), "fill")) == false) {
+	    					possibleObjectsMatchedWeight[i][j]+=1;
+	    				}
+	    				
+	    			}
+	    				
+				}
+					
+				// Now that we have our possibleObjectsMatchedWeight matrix populated, let's take a look which figures have the lowest
+				// relationship weight between them.
+				
+				List<Integer> matchedAIndexes = new ArrayList<Integer>();
+				List<Integer> matchedBIndexes = new ArrayList<Integer>();
+				
+				for (int i = 0; i < possibleObjectsMatchedWeight.length; i++) {
+					Integer minWeight = 9999;
+					HashMap<Integer,List<Integer>> matchedIndexes = new HashMap<Integer, List<Integer>>();
+					List<Integer> matchedBIndexWeight = new ArrayList<Integer>();
+					Integer minMatchIndexB = -1;
+					for (int j = 0; j < possibleObjectsMatchedWeight[i].length; j++) {
+						
+						if (possibleObjectsMatchedWeight[i][j] < minWeight) {
+							minWeight = possibleObjectsMatchedWeight[i][j];
+							minMatchIndexB = j;
+						}
+						
+						
+					}
+					
+					matchedBIndexWeight.add(minMatchIndexB);
+					matchedBIndexWeight.add(minWeight);
+					matchedIndexes.put(i, matchedBIndexWeight);
+					
+					matchedAIndexes.add(i);
+					matchedBIndexes.add(minMatchIndexB);
+			
+				}
+				
+				
+				SemanticNetwork semanticNetwork = new SemanticNetwork(figureARelationDiagram, figureBRelationDiagram, "2x2");
+				
+				List<String> transformations = new ArrayList<String>();
+				List<String> finalCharacteristic = new ArrayList<String>();
+				
+				for (int i = 0; i < numShapesA; i++) {
+					
+					String objectStringA = figureARelationDiagram.objectArray.get(i);
+					String objectStringB = figureBRelationDiagram.objectArray.get(i);
+				
+					if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("shape"), "null")) == false) {
+						
+						transformations.add("shape");
+						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"));
+					}
+					else if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("fill"), "null")) == false) {
+						
+						transformations.add("fill");
+						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"));
+					}
+					else if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("angle"), "null")) == false) {
+						
+						transformations.add("angle");
+						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
+					}
+					else if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("size"), "null")) == false) {
+						
+						transformations.add("size");
+						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"));
+					}
+					else if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("alignment"), "null")) == false) {
+						
+						transformations.add("alignment");
+						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
+					}
+					semanticNetwork.figure1shapes.add(figureARelationDiagram.objects.get(objectStringA));
+					semanticNetwork.figure2shapes.add(figureBRelationDiagram.objects.get(objectStringB));
+					semanticNetwork.transformations.add(transformations);
+					semanticNetwork.finalCharacteristic.add(finalCharacteristic);
+				}
+					//Call update weights
+					semanticNetwork.updateWeights();
+					possibleSemanticNetworks.add(semanticNetwork);
+					
+					//System.out.println("Just created first semantic network");
+					
+					for (int j = 0; j < semanticNetwork.figure1shapes.size(); j++) {
+						String tempShape = semanticNetwork.figure1shapes.get(j).getName();
+						RavensObject tempObject = semanticNetwork.figure1shapes.get(j);
+						
+						semanticNetwork.figure1shapesHashMap.put(tempShape, tempObject);
+					}
+					for (int j = 0; j < semanticNetwork.figure2shapes.size(); j++) {
+						semanticNetwork.figure2shapesHashMap.put(semanticNetwork.figure2shapes.get(j).getName(), semanticNetwork.figure2shapes.get(j));
+					}
+				
 			
 			}
 			
@@ -262,7 +421,7 @@ public class Agent {
 				List<String> transformations = new ArrayList<String>();
 				List<String> finalCharacteristic = new ArrayList<String>();
 				
-				String shapeB = coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(0)).getAttributes().get("shape"),"null");
+				//String shapeB = coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(0)).getAttributes().get("shape"),"null");
 				
 				if (coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(0)).getAttributes().get("shape"),"null").equals(coalesce(figureARelationDiagram.objects.get(figureARelationDiagram.objectArray.get(0)).getAttributes().get("shape"), "null")) == false) {
 					
@@ -317,9 +476,12 @@ public class Agent {
 		return possibleSemanticNetworks;
     }
     
-    
+    // Return Array of Possible Answers
     public List<RelationDiagram> buildAnswerRelationDiagram(List<SemanticNetwork> relationSemanticNetworkArray, List<SemanticNetwork> transformationSemanticNetworkArray, RelationDiagram initialRelationDiagram) {
     	List<RelationDiagram> possibleAnswersRelationDiagram = new ArrayList<RelationDiagram>();
+    	
+    	RelationDiagram tempRelationDiagram = new RelationDiagram();
+		tempRelationDiagram.buildDiagram(initialRelationDiagram.ravensFigure);
     	
     	for (int i = 0; i < relationSemanticNetworkArray.size(); i++) {
 			SemanticNetwork relationSemanticNetwork = relationSemanticNetworkArray.get(i);
@@ -339,18 +501,19 @@ public class Agent {
 							finalCharacteristic = transformationSemanticNetwork.finalCharacteristic.get(l);
 						}
 						
-						RelationDiagram tempRelationDiagram = initialRelationDiagram;
+						
 						
 						for (int m = 0; m < transformationArray.size(); m++) {
 							tempRelationDiagram.objects.get(shapeToTransform.getName()).getAttributes().put(transformationArray.get(m), finalCharacteristic.get(m));
 						}
 						
-						possibleAnswersRelationDiagram.add(tempRelationDiagram);
 						
 					}
 				}
 			}
+			possibleAnswersRelationDiagram.add(tempRelationDiagram);
     	}
+    	
     	
     	
     	return possibleAnswersRelationDiagram;
