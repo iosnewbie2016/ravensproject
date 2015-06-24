@@ -12,6 +12,9 @@ public class SemanticNetwork {
 	List<RavensObject> figure1shapes = new ArrayList<RavensObject>();
 	List<RavensObject> figure2shapes = new ArrayList<RavensObject>();
 	
+	List<RavensObject> addedShapes = new ArrayList<RavensObject>();
+	List<RavensObject> deletedShapes = new ArrayList<RavensObject>();
+	
 	List<List<String>> transformations = new ArrayList<List<String>>();
 	List<List<String>> finalCharacteristic = new ArrayList<List<String>>();
 	
