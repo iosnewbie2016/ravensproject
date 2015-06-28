@@ -51,7 +51,7 @@ public class RavensProject {
         }
         
         // Initializing problem-solving agent from Agent.java
-        Agent agent = new Agent();                                      // Your agent will be initialized with its default constructor.
+        Agent2 agent = new Agent2();                                      // Your agent will be initialized with its default constructor.
                                                                         // You may modify the default constructor in Agent.java
         
         // Running agent against each problem set

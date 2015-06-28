@@ -154,7 +154,7 @@ public class RelationDiagram {
 				this.fillArray.add(thisObject.getAttributes().get("fill"));
 			}
 			if (thisObject.getAttributes().get("angle") != null) {
-				tempFrame.angle = Integer.parseInt(thisObject.getAttributes().get("angle"));  //FRAME
+				tempFrame.angle = Double.parseDouble(thisObject.getAttributes().get("angle"));  //FRAME
 				this.angleArray.add(thisObject.getAttributes().get("angle"));
 			}
 			if (thisObject.getAttributes().get("alignment") != null) {
@@ -199,9 +199,14 @@ public class RelationDiagram {
 						this.relations[currObjectIndex][relationObjectIndex] = attributeName;
 						
 						
-						//FRAMES
+						//FRAMES - update for new Relationships in Frames here
 						if (attributeName.equals("inside")) {
 							this.frames.get(thisObject.getName()).inside.put(cString, this.frames.get(cString));
+							this.frames.get(cString).hasInside.put(thisObject.getName(), this.frames.get(thisObject.getName()));
+						}
+						else if (attributeName.equals("above")) {
+							this.frames.get(thisObject.getName()).above.put(cString, this.frames.get(cString));
+							this.frames.get(cString).below.put(thisObject.getName(), this.frames.get(thisObject.getName()));
 						}
 						
 						
@@ -245,7 +250,7 @@ public class RelationDiagram {
 	
 	
 	
-	public void buildDiagram(HashMap<String,RavensObject> objects) {
+	/*public void buildDiagram(HashMap<String,RavensObject> objects) {
 		
 		this.numShapes = objects.size();
 		this.relations = new String[this.numShapes][this.numShapes];
@@ -329,161 +334,210 @@ public class RelationDiagram {
 		
 			
 		
-	}
+	}*/
 	
 	
 	
 	
 	public Integer compare(RelationDiagram diagramComparedTo) {
-		this.numShapes = this.objects.size();
-		diagramComparedTo.numShapes = diagramComparedTo.objects.size();
+        Integer numShapesA = this.frames.size();
+		Integer numShapesB = diagramComparedTo.frames.size();
 		
-		RelationDiagram relation1 = new RelationDiagram();
-		relation1.buildDiagram(this.objects);
-		RelationDiagram relation2 = new RelationDiagram();
-		relation2.buildDiagram(diagramComparedTo.objects);
+		Integer numShapesDiff = numShapesB - numShapesA;
 		
 		
-		/*this.ravensObjectArray.clear();
-		diagramComparedTo.ravensObjectArray.clear();
+		List<SemanticNetwork> possibleSemanticNetworks = new ArrayList<SemanticNetwork>();
 		
-		for (RavensObject value : this.objects.values()) {
-			this.ravensObjectArray.add(value);
-		}
-		for (RavensObject value : diagramComparedTo.objects.values()) {
-			diagramComparedTo.ravensObjectArray.add(value);
-		}*/
 		
-	
-		
-		Integer numShapesA = this.numShapes;
-		Integer numShapesB = diagramComparedTo.numShapes;
-		
-		int possibleObjectsMatchedWeight[][] = new int[numShapesA][numShapesB];
-		
-		//Will compare each object in Figure A to each object in Figure B and build the possibleObjectsMatchedWeight matrix
-		//When comparison is over, the relationships with the least amount of weight will be considered.
-		
-		// Iterate through each object in A
-		for (int i = 0; i < this.objects.size(); i ++) {
-			
-			// Iterate through each object in B
-			for (int j = 0; j < diagramComparedTo.objects.size(); j++) {
-				
-				Integer numRelationsA = 0;
-				List<String> typesRelationsA = new ArrayList<String>();
-				
-				// Look at relationships between current object and all others in FIgure A
-				for (int k = 0; k < this.relations[i].length; k++) {
-					if (this.relations[i][k] != null) {
-						numRelationsA++;
-						typesRelationsA.add(this.relations[i][k]);
-					}
-				}
-				
-				// Keep track of relationships this particular object has
-				Integer numRelationsB = 0;
-				List<String> typesRelationsB = new ArrayList<String>();
-				
-				//RELATIONSHIPS
-				
-				// Look at relationships between current object and all others in FIgure B
-				for (int k = 0; k < diagramComparedTo.relations[j].length; k++) {
-					if (diagramComparedTo.relations[j][k] != null) {
-						numRelationsB++;
-						typesRelationsB.add(diagramComparedTo.relations[j][k]);
-					}
-				}
-				
-				Integer numUnmatchedRelations = 0;
-				List<String> tempTypesRelationsA = new ArrayList<String>();
-				for (int k = 0; k < typesRelationsA.size(); k++) {
-					tempTypesRelationsA.add(typesRelationsA.get(0));
-				}
-				
-				List<String> tempTypesRelationsB = new ArrayList<String>();
-				for (int k = 0; k < typesRelationsB.size(); k++) {
-					tempTypesRelationsB.add(typesRelationsB.get(0));
-				}
-				
-				
-				// Match similar relations in Figure A and Figure B
-				Integer relationsMatched = 0;
-				for (int k = 0; k < numRelationsA; k++) {
-	
-					for (int l = 0; l < numRelationsB; l++) {
-						if (tempTypesRelationsA.get(k).equals(tempTypesRelationsB.get(l))) {
-							tempTypesRelationsA.remove(k);
-							tempTypesRelationsB.remove(l);
-							numRelationsA-=1;
-							numRelationsB-=1;
-							break;
-							
-						}
-					}
-				}
-				
-				numUnmatchedRelations += tempTypesRelationsA.size();
-				numUnmatchedRelations += tempTypesRelationsB.size();
-				
-				possibleObjectsMatchedWeight[i][j]+=numUnmatchedRelations*5;
-				
-				// Comparison of OTHER ATTRIBUTES
-				
-				if (coalesce(this.objects.get(this.objectArray.get(i)).getAttributes().get("size"),"null").equals(coalesce(diagramComparedTo.objects.get(diagramComparedTo.objectArray.get(j)).getAttributes().get("size"), "null")) == false) {
-					possibleObjectsMatchedWeight[i][j]+=4;
-				}
-				if (coalesce(this.objects.get(this.objectArray.get(i)).getAttributes().get("alignment"),"null").equals(coalesce(diagramComparedTo.objects.get(diagramComparedTo.objectArray.get(j)).getAttributes().get("alignment"), "null")) == false) {
-					possibleObjectsMatchedWeight[i][j]+=2;
-				}
-				if (coalesce(this.objects.get(this.objectArray.get(i)).getAttributes().get("angle"),"null").equals(coalesce(diagramComparedTo.objects.get(diagramComparedTo.objectArray.get(j)).getAttributes().get("angle"), "null")) == false) {
-					possibleObjectsMatchedWeight[i][j]+=2;
-				}
-				if (coalesce(this.objects.get(this.objectArray.get(i)).getAttributes().get("shape"),"null").equals(coalesce(diagramComparedTo.objects.get(diagramComparedTo.objectArray.get(j)).getAttributes().get("shape"), "null")) == false) {
-					possibleObjectsMatchedWeight[i][j]+=3;
-				}
-				if (coalesce(this.objects.get(this.objectArray.get(i)).getAttributes().get("fill"),"null").equals(coalesce(diagramComparedTo.objects.get(diagramComparedTo.objectArray.get(j)).getAttributes().get("fill"), "null")) == false) {
-					possibleObjectsMatchedWeight[i][j]+=1;
-				}
-				
-			}
-				
-		}
-			
-		// Now that we have our possibleObjectsMatchedWeight matrix populated, let's take a look which figures have the lowest
-		// relationship weight between them.
-		
-		List<Integer> matchedAIndexes = new ArrayList<Integer>();
-		List<Integer> matchedBIndexes = new ArrayList<Integer>();
-		Integer differences = 0;
-		
-		for (int i = 0; i < possibleObjectsMatchedWeight.length; i++) {
-			Integer minWeight = 9999;
-			HashMap<Integer,List<Integer>> matchedIndexes = new HashMap<Integer, List<Integer>>();
-			List<Integer> matchedBIndexWeight = new ArrayList<Integer>();
-			Integer minMatchIndexB = -1;
-			for (int j = 0; j < possibleObjectsMatchedWeight[i].length; j++) {
-				
-				if (possibleObjectsMatchedWeight[i][j] < minWeight) {
-					minWeight = possibleObjectsMatchedWeight[i][j];
-					minMatchIndexB = j;
-				}
-				
-				
-			}
-			
-			matchedBIndexWeight.add(minMatchIndexB);
-			matchedBIndexWeight.add(minWeight);
-			matchedIndexes.put(i, matchedBIndexWeight);
-			
-			differences+=minWeight;
-			
-			matchedAIndexes.add(i);
-			matchedBIndexes.add(minMatchIndexB);
+// EASY CASE: SAME NUMBER OF SHAPES
+//if (numShapesDiff == 0) {
+                
+    // FIGURE A and B have more than one shape
+    //if (numShapesA > 1 | numShapesB > 1) {
+        
+        
+        // Look at relationships that figures have against one another.
+        Integer numRelationshipMatches = 0;
+        
+        int possibleObjectsMatchedWeight[][] = new int[numShapesA][numShapesB];
+        
+        
+        //Used For Weights
+        List<String> framesAInOrder = new ArrayList<String>();
+        List<List <String>> framesBMatchedWithA = new ArrayList<List <String>>();
+        List<List <Integer>> weightMatchesAB = new ArrayList<List <Integer>>();
+        
+        //Will compare each object in Figure A to each object in Figure B and build the possibleObjectsMatchedWeight matrix
+        //When comparison is over, the relationships with the least amount of weight will be considered.
+        
+        // Iterate through each object in A
+        //for (int i = 0; i < this.ravensObjectArray.size(); i ++) {
+        //int i = 0;
+        for(String frameNameA : this.frames.keySet()) {
 
-		}
-		
-		return differences;
+            Frame tempFrameA = new Frame(this.frames.get(frameNameA));
+            
+            
+            //Used for Weights
+            framesAInOrder.add(frameNameA);
+            List<String> framesBInOrder = new ArrayList<String>();
+            List<Integer> weightMatches = new ArrayList<Integer>();
+            
+            // Iterate through each object in B
+            //for (int j = 0; j < diagramComparedTo.ravensObjectArray.size(); j++) {
+            //int j = 0;
+            for(String frameNameB : diagramComparedTo.frames.keySet()) {
+
+                Frame tempFrameB = new Frame(diagramComparedTo.frames.get(frameNameB));
+                
+                //Used for Weights
+                framesBInOrder.add(frameNameB);
+                
+                
+                Integer numInsideRelationsA = tempFrameA.inside.size();
+                Integer numAboveRelationsA = tempFrameA.above.size();
+                //List<String> typesRelationsA = new ArrayList<String>();
+                
+                // Look at relationships between current object and all others in FIgure A
+                /*for (int k = 0; k < this.relations[i].length; k++) {
+                    if (this.relations[i][k] != null) {
+                        numRelationsA++;
+                        typesRelationsA.add(this.relations[i][k]);
+                    }
+                }*/
+                
+                // Keep track of relationships this particular object has
+                Integer numInsideRelationsB = tempFrameB.inside.size();
+                Integer numAboveRelationsB = tempFrameB.above.size();
+                //List<String> typesRelationsB = new ArrayList<String>();
+                
+                //RELATIONSHIPS
+                
+                // Look at relationships between current object and all others in FIgure B
+                /*for (int k = 0; k < diagramComparedTo.relations[j].length; k++) {
+                    if (diagramComparedTo.relations[j][k] != null) {
+                        numRelationsB++;
+                        typesRelationsB.add(diagramComparedTo.relations[j][k]);
+                    }
+                }*/
+                
+                Integer numInsideUnmatchedRelations = Math.abs(numInsideRelationsA-numInsideRelationsB);
+                Integer numAboveUnmatchedRelations = Math.abs(numAboveRelationsA-numAboveRelationsB);
+                
+                Integer numTotalRelationsA = numInsideRelationsA+numAboveRelationsA; //Keep adding all other relations
+                Integer numTotalRelationsB = numInsideRelationsB+numAboveRelationsB; //Keep adding all other relations
+                
+                Integer numTotalUnmatchedRelations = Math.abs(numTotalRelationsA-numTotalRelationsB); 
+                
+                /*Integer numUnmatchedRelations = 0;
+                List<String> tempTypesRelationsA = new ArrayList<String>();
+                for (int k = 0; k < typesRelationsA.size(); k++) {
+                    tempTypesRelationsA.add(typesRelationsA.get(0));
+                }
+                
+                List<String> tempTypesRelationsB = new ArrayList<String>();
+                for (int k = 0; k < typesRelationsB.size(); k++) {
+                    tempTypesRelationsB.add(typesRelationsB.get(0));
+                }*/
+                
+                
+                
+                /*
+                // Match similar relations in Figure A and Figure B
+                Integer relationsMatched = 0;
+                for (int k = 0; k < numRelationsA; k++) {
+
+                    for (int l = 0; l < numRelationsB; l++) {
+                        if (tempTypesRelationsA.get(k).equals(tempTypesRelationsB.get(l))) {
+                            tempTypesRelationsA.remove(k);
+                            tempTypesRelationsB.remove(l);
+                            numRelationsA-=1;
+                            numRelationsB-=1;
+                            break;
+                            
+                        }
+                    }
+                }
+                */
+                
+                //numUnmatchedRelations += tempTypesRelationsA.size();
+                //numUnmatchedRelations += tempTypesRelationsB.size();
+                
+                Integer tempWeight = 0;
+                
+                //possibleObjectsMatchedWeight[i][j]+=numInsideUnmatchedRelations*5;
+                tempWeight += numInsideUnmatchedRelations*5;
+                tempWeight += numAboveUnmatchedRelations*5;
+                
+                
+                
+                // Comparison of OTHER ATTRIBUTES
+                
+                if (tempFrameA.size.equals(tempFrameB.size) == false) {
+                    //possibleObjectsMatchedWeight[i][j]+=4;
+                    tempWeight+=5;
+                }
+                if (coalesce(tempFrameA.alignment, "null").equals(coalesce(tempFrameB.alignment, "null")) == false) {
+                    //possibleObjectsMatchedWeight[i][j]+=2;
+                    tempWeight+=4;
+                }
+                if (coalesce(tempFrameA.angle, "null").equals(coalesce(tempFrameB.angle,"null")) == false) {
+                    //possibleObjectsMatchedWeight[i][j]+=2;
+                    if (coalesce(tempFrameA.angle, 999.0) != 999.0 & coalesce(tempFrameB.angle, 999.0) != 999.0) {
+                        if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) % 90.0 == 0.0) { // Reflection
+                            tempWeight+=2;
+                        }
+                        else {
+                            tempWeight+=3;
+                        }
+                    }
+                }
+                if (coalesce(tempFrameA.shape, "null").equals(coalesce(tempFrameB.shape,"null")) == false) {
+                    //possibleObjectsMatchedWeight[i][j]+=3;
+                    tempWeight+=6;
+                }
+                if (coalesce(tempFrameA.fill,"null").equals(coalesce(tempFrameB.fill,"null")) == false) {
+                    //possibleObjectsMatchedWeight[i][j]+=1;
+                    tempWeight+=1;
+                }
+                
+                weightMatches.add(tempWeight);
+                
+            }
+            weightMatchesAB.add(weightMatches);
+            framesBMatchedWithA.add(framesBInOrder);
+
+        }
+            
+        // Now that we have our possibleObjectsMatchedWeight matrix populated, let's take a look which figures have the lowest
+        // relationship weight between them.
+        
+        List<Integer> matchedAIndexes = new ArrayList<Integer>();
+        List<Integer> matchedBIndexes = new ArrayList<Integer>();
+        
+        Integer differences = 0;
+        
+        for (int i = 0; i < framesAInOrder.size(); i++) {
+            Integer minWeight = 9999;
+            //HashMap<Integer,List<Integer>> matchedIndexes = new HashMap<Integer, List<Integer>>();
+            //List<Integer> matchedBIndexWeight = new ArrayList<Integer>();
+            Integer minMatchIndexB = -1;
+            for (int j = 0; j < framesBMatchedWithA.get(i).size(); j++) {
+                
+                if (weightMatchesAB.get(i).get(j) < minWeight) {
+                    minWeight = weightMatchesAB.get(i).get(j);
+                    minMatchIndexB = j;
+                }
+                
+                
+            }
+            
+            differences+=minWeight;
+            matchedAIndexes.add(i);
+            matchedBIndexes.add(minMatchIndexB);
+			
+        }
+        return differences;
 	}
 	
 	/*public Integer compare(RelationDiagram diagramComparedTo) {
