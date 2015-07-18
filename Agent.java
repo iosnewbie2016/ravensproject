@@ -7,9 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 // Uncomment these lines to access image processing.
-//import java.awt.Image;
-//import java.io.File;
-//import javax.imageio.ImageIO;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.imageio.ImageIO;
 
 /**
  * Your Agent for solving Raven's Progressive Matrices. You MUST modify this
@@ -65,912 +69,1483 @@ public class Agent {
      */
     public int Solve(RavensProblem problem) {
     	
-    	if (problem.hasVerbal() == false) {
-    		return -1;
+    	int selectedAnswer = -1;
+    	
+    	//RED = -4777216
+    	//GREEN = -8000000
+    	//BLUE = -12999999
+    	
+    	BufferedImage testColors = new BufferedImage(700, 700, BufferedImage.TYPE_INT_ARGB); 
+    	for (int i = 0; i < 700; i++) {
+    		for (int j = 0; j < 100; j++) {
+    			testColors.setRGB(i, j, -500000);
+    		}
+    		for (int j = 100; j < 200; j++) {
+    			testColors.setRGB(i, j, -50000000);
+    		}
+    		for (int j = 200; j < 300; j++) {
+    			testColors.setRGB(i, j, -4000000);
+    		}
+    		for (int j = 300; j < 400; j++) {
+    			testColors.setRGB(i, j, -5500000);
+    		}
+    		for (int j = 400; j < 500; j++) {
+    			testColors.setRGB(i, j, -6500000);
+    		}
+    		for (int j = 500; j < 600; j++) {
+    			testColors.setRGB(i, j, -8500000);
+    		}
+    		for (int j = 600; j < 700; j++) {
+    			testColors.setRGB(i, j, -14000000);
+    		}
     	}
     	
-    	Integer chosenMultipleChoiceAnswer = -1;
+    	File testColorsFile = new File("testColors.png");
     	
-    	// Specific solution to 2x2 problem
+    	try {
+    		ImageIO.write(testColors, "png", testColorsFile);
+		} catch (IOException e) {}
+    	
+    	Integer numAnswerChoices = 0;
+    	ArrayList<Integer> answersToCompare = new ArrayList<Integer>();
     	if (problem.getProblemType().equals("2x2")) {
-    		System.out.println(problem.getName() + " 2x2");
+    		BufferedImage figureAImage = null;
+        	BufferedImage figureBImage = null;
+        	BufferedImage figureCImage = null;
     		
-    		// Variables for relation Diagrams of all figures
-    		RelationDiagram figureARelationDiagram = new RelationDiagram();
-    		RelationDiagram figureBRelationDiagram = new RelationDiagram();
-    		RelationDiagram figureCRelationDiagram = new RelationDiagram();
-    		RelationDiagram figure1RelationDiagram = new RelationDiagram();
-    		RelationDiagram figure2RelationDiagram = new RelationDiagram();
-    		RelationDiagram figure3RelationDiagram = new RelationDiagram();
-    		RelationDiagram figure4RelationDiagram = new RelationDiagram();
-    		RelationDiagram figure5RelationDiagram = new RelationDiagram();
-    		RelationDiagram figure6RelationDiagram = new RelationDiagram();
- 
-    		
-    		// Build relationship diagrams for all figures above
-    		for(String figureName : problem.getFigures().keySet()) {
-        		
-        		RavensFigure thisFigure = problem.getFigures().get(figureName);
+	    	RavensFigure figureA = problem.getFigures().get("A");
+	    	RavensFigure figureB = problem.getFigures().get("B");
+	    	RavensFigure figureC = problem.getFigures().get("C");
+	    	
+	    	numAnswerChoices = 6;
+	    	for (int i = 1; i < numAnswerChoices+1; i++) {
+	    		answersToCompare.add(i);
+	    	}
+	    	
+	    	try { // Required by Java for ImageIO.read
+	    		figureAImage = ImageIO.read(new File(figureA.getVisual()));
+	    		figureBImage = ImageIO.read(new File(figureB.getVisual()));
+	    		figureCImage = ImageIO.read(new File(figureC.getVisual()));
+	    	} catch(Exception ex) {}
+	    	
+	    	
+	    	
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArrays = compareProcess(figureAImage, 
+	    			figureBImage, figureCImage, problem, answersToCompare, 1);
+	    	
+	    	ArrayList<Integer> possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    	
+	    	if (possibleAnswers.size() == 0) {
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " SKIPPED");
+	    		return -1;
+	    	}
+	    	else if (possibleAnswers.size() == 1) {
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswers.get(0));
+	    		return possibleAnswers.get(0);
+	    	}
+	    	else {
 
-        		switch (figureName) {
-        			case ("A"):
-        				figureARelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("B"):
-        				figureBRelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("C"):
-        				figureCRelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("1"):
-        				figure1RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("2"):
-        				figure2RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("3"):
-        				figure3RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("4"):
-        				figure4RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("5"):
-        				figure5RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        			case ("6"):
-        				figure6RelationDiagram.buildDiagram(thisFigure);
-        			break;
-        		}
-        		    		
-    		}
+	    		ArrayList<ArrayList <Double>> distanceArraysReflect = compareProcess(figureAImage, 
+		    			figureBImage, figureCImage, problem, possibleAnswers, 2);
+	    		
+	    		ArrayList<Integer> possibleAnswersReflect = minDistance(distanceArraysReflect, possibleAnswers, 2);
+	    		
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswersReflect.get(0));
+	    	
+	    		return  possibleAnswersReflect.get(0);
+	    	}
+	    	
+    	}
+    	else {
+    		BufferedImage figureAImage = null;
+        	BufferedImage figureBImage = null;
+        	BufferedImage figureCImage = null;
+        	BufferedImage figureDImage = null;
+        	BufferedImage figureEImage = null;
+        	BufferedImage figureFImage = null;
+        	BufferedImage figureGImage = null;
+        	BufferedImage figureHImage = null;
+    		
+    		
+    		RavensFigure figureA = problem.getFigures().get("A");
+	    	RavensFigure figureB = problem.getFigures().get("B");
+	    	RavensFigure figureC = problem.getFigures().get("C");
+	    	RavensFigure figureD = problem.getFigures().get("D");
+	    	RavensFigure figureE = problem.getFigures().get("E");
+	    	RavensFigure figureF = problem.getFigures().get("F");
+	    	RavensFigure figureG = problem.getFigures().get("G");
+	    	RavensFigure figureH = problem.getFigures().get("H");
+	    	
+	    	numAnswerChoices = 8;
+	    	for (int i = 1; i < numAnswerChoices+1; i++) {
+	    		answersToCompare.add(i);
+	    	}
+	    	
+	    	try { // Required by Java for ImageIO.read
+	    		figureAImage = ImageIO.read(new File(figureA.getVisual()));
+	    		figureBImage = ImageIO.read(new File(figureB.getVisual()));
+	    		figureCImage = ImageIO.read(new File(figureC.getVisual()));
+	    		figureDImage = ImageIO.read(new File(figureD.getVisual()));
+	    		figureEImage = ImageIO.read(new File(figureE.getVisual()));
+	    		figureFImage = ImageIO.read(new File(figureF.getVisual()));
+	    		figureGImage = ImageIO.read(new File(figureG.getVisual()));
+	    		figureHImage = ImageIO.read(new File(figureH.getVisual()));
+	    	} catch(Exception ex) {}
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArraysACG = compareProcess(figureAImage, 
+	    			figureCImage, figureGImage, problem, answersToCompare, 1);
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArraysBCH = compareProcess(figureBImage, 
+	    			figureCImage, figureHImage, problem, answersToCompare, 1);
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArraysDFG = compareProcess(figureDImage, 
+	    			figureFImage, figureGImage, problem, answersToCompare, 1);
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArraysEFH = compareProcess(figureEImage, 
+	    			figureFImage, figureHImage, problem, answersToCompare, 1);
+	    	
+	    	ArrayList<ArrayList <Double>> distanceArrays = new ArrayList<ArrayList <Double>>();
+	    	
+	    	for (int i = 0; i < 2; i++) {
+	    		distanceArrays.add(distanceArraysACG.get(i));
+	    		distanceArrays.add(distanceArraysBCH.get(i));
+	    		distanceArrays.add(distanceArraysDFG.get(i));
+	    		distanceArrays.add(distanceArraysEFH.get(i));
+	    	}
+	    	
+	    	
+	    	ArrayList<Integer> possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    	
+	    	if (possibleAnswers.size() == 0) {
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " SKIPPED");
+	    		return -1;
+	    	}
+	    	else if (possibleAnswers.size() == 1) {
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswers.get(0));
+	    		return possibleAnswers.get(0);
+	    	}
+	    	else {
+
+	    		ArrayList<ArrayList <Double>> distanceArraysACGReflect = compareProcess(figureAImage, 
+		    			figureCImage, figureGImage, problem, possibleAnswers, 1);
+		    	
+		    	ArrayList<ArrayList <Double>> distanceArraysBCHReflect = compareProcess(figureBImage, 
+		    			figureCImage, figureHImage, problem, possibleAnswers, 1);
+		    	
+		    	ArrayList<ArrayList <Double>> distanceArraysDFGReflect = compareProcess(figureDImage, 
+		    			figureFImage, figureGImage, problem, possibleAnswers, 1);
+		    	
+		    	ArrayList<ArrayList <Double>> distanceArraysEFHReflect = compareProcess(figureEImage, 
+		    			figureFImage, figureHImage, problem, possibleAnswers, 1);
+		    	
+		    	ArrayList<ArrayList <Double>> distanceArraysReflect = new ArrayList<ArrayList <Double>>();
+		    	
+		    	for (int i = 0; i < 2; i++) {
+		    		distanceArraysReflect.add(distanceArraysACGReflect.get(i));
+		    		distanceArraysReflect.add(distanceArraysBCHReflect.get(i));
+		    		distanceArraysReflect.add(distanceArraysDFGReflect.get(i));
+		    		distanceArraysReflect.add(distanceArraysEFHReflect.get(i));
+		    	}
+		    	
+		    	ArrayList<Integer> possibleAnswersReflect = minDistance(distanceArraysReflect, possibleAnswers, 2);
+	    		
+	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswersReflect.get(0));
+	    		
+	    		return  possibleAnswersReflect.get(0);
+	    	}
+	    	
+    	}
     	
-    		//MultipleChoiceAnswers in order
-    		List<RelationDiagram> multipleChoiceRelationDiagrams = new ArrayList<RelationDiagram>();
-    		multipleChoiceRelationDiagrams.add(figure1RelationDiagram);
-    		multipleChoiceRelationDiagrams.add(figure2RelationDiagram);
-    		multipleChoiceRelationDiagrams.add(figure3RelationDiagram);
-    		multipleChoiceRelationDiagrams.add(figure4RelationDiagram);
-    		multipleChoiceRelationDiagrams.add(figure5RelationDiagram);
-    		multipleChoiceRelationDiagrams.add(figure6RelationDiagram);
+
+    	
+    	//ArrayList<Integer> figureANumPixels = numPixelAnalysis(figureAImage);
+    	//ArrayList<Integer> figureBNumPixels = numPixelAnalysis(figureBImage);
+    	//ArrayList<Integer> figureCNumPixels = numPixelAnalysis(figureCImage);
+    	
+    	/////////////////////////////////////////////////////////////////////////////
+    	// TESTING OF MOST FUNCTIONS
+    	/*BufferedImage reflectHorFigureA = reflectImageHorizontally(figureAImage);
+    	BufferedImage reflectVerFigureA = reflectImageVertically(figureAImage);
+    	BufferedImage rotate90FigureA = rotate90degrees(figureAImage,1);*/
+    	//BufferedImage subAFromBFigureA = subtractPixels(figureAImage, figureBImage);
+    	
+	
+    	/*File fileFigureA = new File("fileFigureA.png");
+    	File fileFigureB = new File("fileFigureB.png");
+    	File fileFigureHorA = new File("reflectHorFileFigureA.png");
+    	File fileFigureVerA = new File("reflectVerFileFigureA.png");
+    	File fileFigureRot90A = new File("rotate90FileFigureA.png");
+    	File fileFigureSubAFromB = new File("subAFromBFileFigure.png");*/
+    	//File fileObjectsFigureAs = new File("objectsFigureA.png");
+    	//END TEST
+    	/////////////////////////////////////////////////////////////////////////////
+
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	/*System.out.println("RGB AB" + rgbPerAB);
+    	System.out.println("RGB C1" + rgbPerC1);
+    	System.out.println("RGB C2" + rgbPerC2);
+    	System.out.println("RGB C3" + rgbPerC3);
+    	System.out.println("RGB C4" + rgbPerC4);
+    	System.out.println("RGB C5" + rgbPerC5);
+    	System.out.println("RGB C6" + rgbPerC6);*/
+    	
+    	
+    	
+    	
+    	/*try {
+    		ImageIO.write(figureAImage, "png", fileFigureA);
+    		ImageIO.write(figureBImage, "png", fileFigureB);
+    		ImageIO.write(reflectHorFigureA, "png", fileFigureHorA);
+			ImageIO.write(reflectVerFigureA, "png", fileFigureVerA);
+			ImageIO.write(rotate90FigureA, "png", fileFigureRot90A);
+			ImageIO.write(subAFromBFigureA, "png", fileFigureSubAFromB);
+			ImageIO.write(overlayPixelsFigureA, "png", fileFigureOverlayPixels);
+		} catch (IOException e) {}
+    	
+    	
+    	ArrayList <BufferedImage> objectsFigureA = separateFigures(figureAImage);
+    	
+    	// Write each image separated one by one
+    	for (int i = 0; i < objectsFigureA.size(); i++) {
+    		try {
+        		ImageIO.write(objectsFigureA.get(i), "png", fileObjectsFigureAs);
+    		} catch (IOException e) {}
+    	}/*
+    	
+    	
+    	/*System.out.println(figureANumPixels);
+    	System.out.println(figureBNumPixels);
+    	System.out.println(figureCNumPixels);*/
+
+
+    }
+ 
+    
+    
+    // OVERLAY, REMOVE TRAILING, COMPARE DISTANCES.
+    // TYPE: 1 = normal
+    //       2 = reflected
+    public ArrayList<ArrayList<Double>> compareProcess(BufferedImage figureAImage, BufferedImage figureBImage, 
+    		BufferedImage figureCImage, RavensProblem problem, ArrayList<Integer> answersToCompare, Integer type) {
+    	
+    	BufferedImage overlayPixelsAB = null;
+    	BufferedImage overlayPixelsAC = null;
+    	
+    	ArrayList<Double> rgbPerAB = new ArrayList<Double>();
+    	ArrayList<Double> rgbPerAC = new ArrayList<Double>();
+    	
+    	BufferedImage reflectVerFigureImageA = reflectImageVertically(figureAImage);
+		BufferedImage reflectHorFigureImageA = reflectImageHorizontally(figureAImage);   		
+		
+		BufferedImage overlayPixelsABReflect = overlayPixelsHighlight(reflectVerFigureImageA, figureBImage, "RGB");
+		BufferedImage overlayPixelsACReflect = overlayPixelsHighlight(reflectHorFigureImageA, figureCImage, "RGB");
+    	
+		overlayPixelsABReflect = removeTrailingPixels(overlayPixelsABReflect);
+    	overlayPixelsACReflect = removeTrailingPixels(overlayPixelsACReflect);
+    	
+    	ArrayList<Double> rgbPerABReflect = percentRGBtoTotalRGBOneImage(overlayPixelsABReflect, "GB");
+    	ArrayList<Double> rgbPerACReflect = percentRGBtoTotalRGBOneImage(overlayPixelsACReflect, "GB");
+    	
+    	Double sumPercentReflect = 0.0;
+    	for (int i = 0; i < rgbPerABReflect.size(); i++) {
+    		sumPercentReflect+=rgbPerABReflect.get(i);
+    		sumPercentReflect+=rgbPerACReflect.get(i);
+    	}
+    	
+    	
+    	if (type == 2 | sumPercentReflect < 0.01) {
+    		overlayPixelsAB = overlayPixelsABReflect;
+    		overlayPixelsAC = overlayPixelsACReflect;
+    		
+    		rgbPerAB = rgbPerABReflect;
+    		rgbPerAC = rgbPerACReflect;
+    	}
+    	else if (type == 1) {
+    		overlayPixelsAB = overlayPixelsHighlight(figureAImage, figureBImage, "RGB");
+    		overlayPixelsAC = overlayPixelsHighlight(figureAImage, figureCImage, "RGB");
+    		
+    		overlayPixelsAB = removeTrailingPixels(overlayPixelsAB);
+        	overlayPixelsAC = removeTrailingPixels(overlayPixelsAC);
+        	
+        	rgbPerAB = percentRGBtoTotalRGBOneImage(overlayPixelsAB, "GB");
+        	rgbPerAC = percentRGBtoTotalRGBOneImage(overlayPixelsAC, "GB");
+        	
+    	}
+    	
+    	
+    	
+    	
+    	//File fileFigureOverlayPixelsAB = new File(problem.getName() + "/overlayPixelsAB.png");
+    	//File fileFigureOverlayPixelsAC = new File(problem.getName() + "/overlayPixelsAC.png");
+
+    	
+    	/*try {
+    		ImageIO.write(overlayPixelsAB, "png", fileFigureOverlayPixelsAB);
+    		ImageIO.write(overlayPixelsAC, "png", fileFigureOverlayPixelsAC);
+		} catch (IOException e) {}*/
+
+    	
+    	
+    	
+    	
+    	
+    	ArrayList<BufferedImage> objectsA = separateObjects(figureAImage, "RGB", 1);
+    	ArrayList<BufferedImage> objectsB = separateObjects(figureBImage, "RGB", 1);
+    	ArrayList<BufferedImage> objectsC = separateObjects(figureCImage, "RGB", 1);
+    	
+    	Integer numObjectsA = objectsA.size();
+    	Integer numObjectsB = objectsB.size();
+    	Integer numObjectsC = objectsC.size();
+    	
+    	Integer diffNumObjectsAB = numObjectsB-numObjectsA;
+    	Integer diffNumObjectsAC = numObjectsC-numObjectsA;
+    	
+    	ArrayList <Double> distanceArrayCAns = new ArrayList <Double>();
+    	ArrayList <Double> distanceArrayBAns = new ArrayList <Double>();
+    	ArrayList <ArrayList <Double>> rgbPerCArray = new ArrayList <ArrayList <Double>>();
+    	ArrayList <ArrayList <Double>> rgbPerBArray = new ArrayList <ArrayList <Double>>();
+    	
+    	ArrayList <Integer> diffNumObjectsArrayCAns = new ArrayList <Integer>();
+    	ArrayList <Integer> diffNumObjectsArrayBAns = new ArrayList <Integer>();
+    	
+    	
+    	
+    			
+    	// Iterate through 6 answer choices and populate percentages of RGB pixels 
+    	for (Integer i = 1; i < answersToCompare.size()+1; i++) {
+    		
+    		Integer currI = answersToCompare.get(i-1);
+    		
+    		RavensFigure figure = problem.getFigures().get(currI.toString());
+    		BufferedImage figureImage = null;
+    		try {
+				figureImage = ImageIO.read(new File(figure.getVisual()));
+			} catch (IOException e) {}
+    		
+    		//Generate png files to study
+    		BufferedImage overlayPixelsCAns = null;
+        	BufferedImage overlayPixelsBAns = null;
+        	
+        	
+        	if (type == 2 | sumPercentReflect < 0.01) {
+        		overlayPixelsCAns = overlayPixelsHighlight(reflectImageVertically(figureCImage), figureImage, "RGB");
+        		overlayPixelsBAns = overlayPixelsHighlight(reflectImageHorizontally(figureBImage), figureImage, "RGB");
+        	}
+        	else if (type == 1) {
+        		overlayPixelsCAns = overlayPixelsHighlight(figureCImage, figureImage, "RGB");
+        		overlayPixelsBAns = overlayPixelsHighlight(figureBImage, figureImage, "RGB");
+        	}
+
+    		overlayPixelsCAns = removeTrailingPixels(overlayPixelsCAns);
+    		overlayPixelsBAns = removeTrailingPixels(overlayPixelsBAns);
+    		
+    		/*File fileOverlayPixelsCAns = new File(problem.getName() + "/overlayPixelsC" + currI + ".png");
+    		File fileOverlayPixelsBAns = new File(problem.getName() + "/overlayPixelsB" + currI + ".png");
+    		
+    		try {
+        		ImageIO.write(overlayPixelsCAns, "png", fileOverlayPixelsCAns);
+        		ImageIO.write(overlayPixelsBAns, "png", fileOverlayPixelsBAns);
+    		} catch (IOException e) {}*/
+    		
+    		// Percentages of pixels between problem and answers.
+    		//ArrayList<Double> rgbPerC = percentRGBtoTotalRGB(figureCImage, figureImage, "RGB");
+    		//ArrayList<Double> rgbPerB = percentRGBtoTotalRGB(figureBImage, figureImage, "RGB");
+    		ArrayList<Double> rgbPerC = percentRGBtoTotalRGBOneImage(overlayPixelsCAns, "GB");
+    		ArrayList<Double> rgbPerB = percentRGBtoTotalRGBOneImage(overlayPixelsBAns, "GB");
+    		
+    		rgbPerCArray.add(rgbPerC);
+    		rgbPerBArray.add(rgbPerB);
+    		
+    		//Distance between AB<->CAns & AC<->BAns
+    		Double distanceAB_CAns = distance(rgbPerAB, rgbPerC);
+    		Double distanceAC_BAns = distance(rgbPerAC, rgbPerB);
     		
     		
-    		// A - B comparisons
-    		List<SemanticNetwork> possibleSemanticNetworksAB = buildSemanticNetwork(figureARelationDiagram, figureBRelationDiagram, problem.getProblemType());
-    		if (possibleSemanticNetworksAB == null) {
-    			return -1;
+    		distanceArrayCAns.add(distanceAB_CAns);
+    		distanceArrayBAns.add(distanceAC_BAns);
+    		
+    		
+    		ArrayList<BufferedImage> objects = separateObjects(figureImage, "RGB", 1);
+        	Integer numObjects = objects.size();
+
+        	
+        	Integer diffNumObjectsCAns = numObjects-numObjectsC;
+        	Integer diffNumObjectsBAns = numObjects-numObjectsB;
+    		
+        	
+        	diffNumObjectsArrayCAns.add(diffNumObjectsCAns);
+        	diffNumObjectsArrayBAns.add(diffNumObjectsBAns);
+    		
+
+        	 
+    	
+    	}
+    	
+    	/*try {
+    		
+    		
+            PrintWriter results = new PrintWriter(problem.getName() + "/ProblemResults.txt");                                                                  
+            
+            
+        	results.println("Percent AB Overlay: " + rgbPerAB);
+            results.println("Percent AC Overlay: " + rgbPerAB);
+            results.println("");
+            
+            for (Integer i = 0; i < distanceArrayCAns.size(); i++) {
+            	Integer currI = answersToCompare.get(i);
+            	
+            	results.println("Percentages C_Ans " + currI + ": " + rgbPerCArray.get(i));
+		    	results.println("Distance AB_CAns " + currI + ": " + distanceArrayCAns.get(i));
+		    	results.println("");
+		    	results.println("Percentages B_Ans " + currI + ": " + rgbPerBArray.get(i));
+		    	results.println("Distance AC_BAns " + currI + ": " + distanceArrayBAns.get(i));
+		    	Double avg = (distanceArrayCAns.get(i)+distanceArrayBAns.get(i))/2;
+		    	results.println("Average: " + avg);
+		    	results.println("");
+		    	results.println("");
+            }
+	    	results.close();
+        	} catch(IOException ex) {
+                System.out.println("Unable to create results file:");
+                System.out.println(ex);
+            }*/
+    	
+    	ArrayList<ArrayList<Double>> distanceArrays = new ArrayList<ArrayList<Double>>();
+    	distanceArrays.add(distanceArrayCAns);
+    	distanceArrays.add(distanceArrayBAns);
+    	
+    	return distanceArrays;
+    	
+    }
+    
+    // Calculate min distance from array of arrays of distances
+    public ArrayList<Integer> minDistance(ArrayList<ArrayList<Double>> distanceArrays, 
+    		ArrayList<Integer> answersToCompare, Integer type) {
+    	
+    	int minDistanceAnswer = -1;
+    	Double minDistance = Double.POSITIVE_INFINITY;
+    	Double minDiffObjects = Double.POSITIVE_INFINITY;
+    	
+    	ArrayList<Integer> possibleAnswers = new ArrayList<Integer>();
+    	
+    	ArrayList<Double> avgDistances = new ArrayList<Double>();
+    	
+    	for (Integer i = 0; i < distanceArrays.get(0).size(); i++) {
+    		
+    		Double sumDistance = 0.0;
+    		
+    		for (Integer j = 0; j < distanceArrays.size(); j++) {
+    			sumDistance += distanceArrays.get(j).get(i);  			
     		}
     		
-    		// A - C comparisons
-    		List<SemanticNetwork> possibleSemanticNetworksAC = buildSemanticNetwork(figureARelationDiagram, figureCRelationDiagram, problem.getProblemType());
-    		if (possibleSemanticNetworksAC == null) {
-    			return -1;
+
+    		Double avgDistance = sumDistance/distanceArrays.size();
+    		
+    		avgDistances.add(avgDistance);
+    	}
+    	
+    	for (Integer i = 0; i < avgDistances.size(); i++) {
+    		
+    		
+    		//Integer sumDiffNumObjects = diffNumObjectsArrayCAns.get(i) + diffNumObjectsArrayBAns.get(i);
+    		//Double avgDiffNumObjects = sumDiffNumObjects.doubleValue()/2;
+    		
+    		//Integer sumDiffNumObjectsAB_AC = diffNumObjectsAB + diffNumObjectsAC;
+    		//Double avgDiffNumObjectsAB_AC = sumDiffNumObjectsAB_AC.doubleValue()/2;
+    		
+    		
+    		//if (avgDiffNumObjects.equals(avgDiffNumObjectsAB_AC)) avgDistance -= 0.05;
+    		
+    		
+    		if ((Math.abs(avgDistances.get(i) - minDistance) < 0.001) & (type == 1)) {
+    			possibleAnswers.add(answersToCompare.get(i));
     		}
     		
-    		List<RelationDiagram> possibleHorizontalAnswers = buildAnswerRelationDiagram(possibleSemanticNetworksAC, possibleSemanticNetworksAB, figureCRelationDiagram);
-    		List<RelationDiagram> possibleVerticalAnswers = buildAnswerRelationDiagram(possibleSemanticNetworksAB, possibleSemanticNetworksAC, figureBRelationDiagram);
-    		
-    		List<RelationDiagram> chosenAnswersToCompare = new ArrayList<RelationDiagram>();
-    		
-    		Integer horizontalBestAnswerIndex = -1;
-    		Integer verticalBestAnswerIndex = -1;
-    		
-    		Integer leastDifference = 99999;
-    		
-    		for (int i = 0; i < possibleHorizontalAnswers.size(); i++) {
-    			for (int j = 0; j < possibleVerticalAnswers.size(); j++) {
-    				Integer difference = possibleHorizontalAnswers.get(i).compare(possibleVerticalAnswers.get(j));
-    				if (difference < leastDifference) {
-    					leastDifference = difference;
-    					horizontalBestAnswerIndex = i;
-    					verticalBestAnswerIndex = j;
-    				}
+    		else if (avgDistances.get(i) < minDistance) {
+    			for (int j = 0; j < possibleAnswers.size(); j++) {
+    				possibleAnswers.remove(0);
     			}
+    			minDistance = avgDistances.get(i);
+	    		minDistanceAnswer = answersToCompare.get(i);
+    			possibleAnswers.add(answersToCompare.get(i));
     		}
-    		
-    		// IDENTICAL answer in horizontal and vertical
-    		if (leastDifference == 0) {
-    			chosenAnswersToCompare.add(possibleHorizontalAnswers.get(horizontalBestAnswerIndex));
-    		}
-    		else {
-    			chosenAnswersToCompare.add(possibleHorizontalAnswers.get(horizontalBestAnswerIndex));
-    			chosenAnswersToCompare.add(possibleVerticalAnswers.get(verticalBestAnswerIndex));
-    		}
-    		
-    		leastDifference = 99999;
-    		
-    		
-    		for (int i = 0; i < chosenAnswersToCompare.size(); i++) {
-    			for (int j = 0; j < multipleChoiceRelationDiagrams.size(); j++) {
-    				Integer difference = chosenAnswersToCompare.get(i).compare(multipleChoiceRelationDiagrams.get(j));
-    				if (difference < leastDifference) {
-    					leastDifference = difference;
-    					chosenMultipleChoiceAnswer = j+1;
-    				}
-    			}
-    		}
-    		
-    		
-    		
-    		
     		
     	}
-    	System.out.println("Answer Chosen: " + chosenMultipleChoiceAnswer);
-    	System.out.println("");
-    	return chosenMultipleChoiceAnswer;
+    	
+    	if (minDistance > 0.5) {
+    		ArrayList<Integer> emptyArray = new ArrayList<Integer>();
+    		return emptyArray;
+    	}
+    	else return possibleAnswers;
+    }
+    
+    // FUNCTIONS//////////////////////////////////////////////////////////////////////////////
+    
+    // Return array of Integers. First element is number of white pixels in image. 
+    // Second is number of black pixels in image. 
+    public ArrayList<Integer> numPixelAnalysis(BufferedImage image) {
+    	ArrayList<Integer> pixelNumArray = new ArrayList<Integer>();
+    	Integer whitePixels = 0;
+    	Integer blackPixels = 0;
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			Integer pixelRGB = image.getRGB(i, j);
+    			if (pixelRGB != -1) blackPixels++;
+    			else whitePixels++;    					
+    		}
+    	}
+    	pixelNumArray.add(whitePixels);
+    	pixelNumArray.add(blackPixels);
+    	
+    	return pixelNumArray;
     }
     
     
-    /*// GENERATOR OF GENERATE & TEST WILL GENERATE DIFFERENT FIGURES BY PERFORMING TRANSFORMATIONS 
-    // ON ALL SHAPES AND COMPARING RESULT TO SECOND FIGURE
-    public RavensObject transformationInOrder(RavensObject shape, Integer typeOfTransformation) {
-    	switch (typeOfTransformation) {
-    	case 0: // UNCHANGED
-    		return shape;
-    		
-    	case 1: // FILL or UNFILL
-    		
-    		//ITERATE THROUGH ALL ATTRIBUTES
-    		for(String attributeName : shape.getAttributes().keySet()) {
-    			
-    			if (attributeName.equals("fill")) {
-    				String attributeValue = shape.getAttributes().get(attributeName);
-    				if (attributeValue.equals("yes")) {
-    					shape.getAttributes().put(attributeName, "no");
-    				}
-    				else if (attributeValue.equals("no")) {
-    					shape.getAttributes().put(attributeName, "yes");
-    				}
-    			}
-    			
-    			return shape;
-    			
+    // Return number of pixels of a specific color
+    public Integer numColorPixels(BufferedImage image, Integer color) {
+    	Integer numPixels = 0;
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			//Integer pixelRGB = image.getRGB(i, j);
+    			if (image.getRGB(i, j) == color) numPixels++; 					
     		}
-    	default:
-    		return shape;
     	}
-    }*/
+    	
+    	return numPixels;
+    }
+    
+    
+    // Remove pixels of a specific color (make them white)
+    public BufferedImage removeColorPixels(BufferedImage image, Integer color) {
+ 
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			Integer pixelRGB = image.getRGB(i, j);
+    			if (pixelRGB == color) image.setRGB(i, j, -1);; 					
+    		}
+    	}
+    	
+    	return image;
+    }
+    
+    
+    // Return number of pixels other than a specific color
+    public Integer numOtherColorPixels(BufferedImage image, Integer color) {
+    	Integer numPixels = 0;
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			Integer pixelRGB = image.getRGB(i, j);
+    			if (pixelRGB != color) numPixels++; 					
+    		}
+    	}
+    	
+    	return numPixels;
+    }
+    
+    
+    // Return percent of pixels of a specific color to entire figure
+    public Double percentColorPixels(BufferedImage image, Integer color) {
+    	Integer numPixelsColor = 0;
+    	Integer totalNumPixels = 0;
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			totalNumPixels++;
+    			Integer pixelRGB = image.getRGB(i, j);
+    			if (pixelRGB == color) {
+    				numPixelsColor++; 					
+    			}
+    		}
+    	}
+    	Double percentReturn = numPixelsColor.doubleValue()/totalNumPixels.doubleValue();
+    	return percentReturn;
+    }
+    
+    
+    // Returns percent of RGB pixels to total number of pixels in overlayed images
+    ArrayList<Double> percentRGB(BufferedImage image1, BufferedImage image2) {
+    	
+    	Double numRedPixels = 0.0;
+    	Double numGreenPixels = 0.0;
+    	Double numBluePixels = 0.0;
+    	Double numTotalPixels = 0.0;
+    	
+    	ArrayList<Double> percentArrayReturnArrayList = new ArrayList<Double>();
+    	
+    	for(int i = 0 ; i < image1.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image1.getHeight() ; j++) {
+	    		
+	    		numTotalPixels++;
+	    		
+	    		Integer pixelRGB1 = image1.getRGB(i, j);
+	    		Integer pixelRGB2 = image2.getRGB(i, j);
+	    		
+	    		if (pixelRGB1 != -1 & pixelRGB2 != -1) numRedPixels++; //RED
+	    		else if (pixelRGB1 != -1) numGreenPixels++; //GREEN
+	    		else if (pixelRGB2 != -1) numBluePixels++; //BLUE
+	    		
+	    		
+	    	}
+	    		    	
+    	}
+    	
+    	Double percentRedFigure12 = numRedPixels/numTotalPixels; // RED (on both)
+    	Double percentGreenFigure12 = numGreenPixels/numTotalPixels; // GREEN (only in A)
+    	Double percentBlueFigure12 = numBluePixels/numTotalPixels; // BLUE (only in B)
+    	
+    	percentArrayReturnArrayList.add(percentRedFigure12);
+    	percentArrayReturnArrayList.add(percentGreenFigure12);
+    	percentArrayReturnArrayList.add(percentBlueFigure12);
+    	
+    	return percentArrayReturnArrayList;
+    	
+    }
     
     
     
-    public List<SemanticNetwork> buildSemanticNetwork(RelationDiagram figureARelationDiagram, RelationDiagram figureBRelationDiagram, String problemType) {
-    	Integer numShapesA = figureARelationDiagram.frames.size();
-		Integer numShapesB = figureBRelationDiagram.frames.size();
-		
-		Integer numShapesDiff = numShapesB - numShapesA;
-		
-		
-		List<SemanticNetwork> possibleSemanticNetworks = new ArrayList<SemanticNetwork>();
-		
-		
-		// EASY CASE: SAME NUMBER OF SHAPES
-		//if (numShapesDiff == 0) {
-						
-			// FIGURE A and B have more than one shape
-			if (numShapesA > 1 | numShapesB > 1) {
-				
-				
-				// Look at relationships that figures have against one another.
-				Integer numRelationshipMatches = 0;
-				
-				int possibleObjectsMatchedWeight[][] = new int[numShapesA][numShapesB];
-				
-				
-				//Used For Weights
-				List<String> framesAInOrder = new ArrayList<String>();
-				List<List <String>> framesBMatchedWithA = new ArrayList<List <String>>();
-				List<List <Integer>> weightMatchesAB = new ArrayList<List <Integer>>();
-				
-				//Will compare each object in Figure A to each object in Figure B and build the possibleObjectsMatchedWeight matrix
-				//When comparison is over, the relationships with the least amount of weight will be considered.
-				
-				// Iterate through each object in A
-				//for (int i = 0; i < figureARelationDiagram.ravensObjectArray.size(); i ++) {
-				//int i = 0;
-				for(String frameNameA : figureARelationDiagram.frames.keySet()) {
+    // Returns percent of selected pixels to total number of NON-WHITE pixels in two images
+    ArrayList<Double> percentRGBtoTotalRGB(BufferedImage image1, BufferedImage image2, String pixelsAccount) {
+    	
+    	Double numRedPixels = 0.0;
+    	Double numGreenPixels = 0.0;
+    	Double numBluePixels = 0.0;
+    	Double numTotalPixels = 0.0;
+    	Double numTotalRGBPixels = 0.0;
+    	
+    	ArrayList<Double> percentArrayReturnArrayList = new ArrayList<Double>();
+    	
+    	for(int i = 0 ; i < image1.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image1.getHeight() ; j++) {
+	    		
+	    		numTotalPixels++;
+	    		
+	    		Integer pixelRGB1 = image1.getRGB(i, j);
+	    		Integer pixelRGB2 = image2.getRGB(i, j);
+	    		
+	    		if (pixelRGB1 != -1 & pixelRGB2 != -1) numRedPixels++; //RED
+	    		else if (pixelRGB1 != -1) numGreenPixels++; //GREEN
+	    		else if (pixelRGB2 != -1) numBluePixels++; //BLUE
+	    		
+	    		
+	    	}
+	    		    	
+    	}
+    	
+    	numTotalRGBPixels = numRedPixels+numGreenPixels+numBluePixels;
+    	
+    	Double percentRedFigure12 = numRedPixels/numTotalRGBPixels; // RED (on both)
+    	Double percentGreenFigure12 = numGreenPixels/numTotalRGBPixels; // GREEN (only in A)
+    	Double percentBlueFigure12 = numBluePixels/numTotalRGBPixels; // BLUE (only in B)
+    	
+    	
+    	for (int i = 0; i < pixelsAccount.length(); i++){
+		    Character c = pixelsAccount.charAt(i);
+		    String cString = c.toString();
+		    
+		    if (cString.equals("R")) percentArrayReturnArrayList.add(percentRedFigure12);
+		    else if (cString.equals("G")) percentArrayReturnArrayList.add(percentGreenFigure12);
+		    else if (cString.equals("B")) percentArrayReturnArrayList.add(percentBlueFigure12);
 
-					Frame tempFrameA = new Frame(figureARelationDiagram.frames.get(frameNameA));
-					
-			        
-					//Used for Weights
-					framesAInOrder.add(frameNameA);
-					List<String> framesBInOrder = new ArrayList<String>();
-					List<Integer> weightMatches = new ArrayList<Integer>();
-					
-					// Iterate through each object in B
-					//for (int j = 0; j < figureBRelationDiagram.ravensObjectArray.size(); j++) {
-					//int j = 0;
-					for(String frameNameB : figureBRelationDiagram.frames.keySet()) {
+    	}
+    	
+    	return percentArrayReturnArrayList;
+    	
+    }
+    
+    
+    
+    
+    
+    // Returns percent of selected pixels to total number of NON-WHITE pixels in overlayed images
+    ArrayList<Double> percentRGBtoTotalRGBOneImage(BufferedImage image, String pixelsAccount) {
+    	
+    	Double numRedPixels = 0.0;
+    	Double numGreenPixels = 0.0;
+    	Double numBluePixels = 0.0;
+    	Double numTotalPixels = 0.0;
+    	Double numTotalRGBPixels = 0.0;
+    	
+    	ArrayList<Double> percentArrayReturnArrayList = new ArrayList<Double>();
+    	
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image.getHeight() ; j++) {
+	    		
+	    		numTotalPixels++;
+	    		
+	    		Integer pixelRGB1 = image.getRGB(i, j);
+	    		
+	    		//RED = -4777216
+	        	//GREEN = -8000000
+	        	//BLUE = -12999999
+	    		
+	    		if (image.getRGB(i, j) == -4777216) numRedPixels++; //RED
+	    		else if (image.getRGB(i, j) == -8000000) numGreenPixels++; //GREEN
+	    		else if (image.getRGB(i, j) == -12999999) numBluePixels++; //BLUE
+	    		
+	    		
+	    	}
+	    		    	
+    	}
+    	
+    	
+    	for (int i = 0; i < pixelsAccount.length(); i++){
+		    Character c = pixelsAccount.charAt(i);
+		    String cString = c.toString();
+		    
+		    if (cString.equals("R")) numTotalRGBPixels+=numRedPixels;
+		    else if (cString.equals("G")) numTotalRGBPixels+=numGreenPixels;
+		    else if (cString.equals("B")) numTotalRGBPixels+=numBluePixels;
 
-						Frame tempFrameB = new Frame(figureBRelationDiagram.frames.get(frameNameB));
-						
-						//Used for Weights
-						framesBInOrder.add(frameNameB);
-						
-						
-						Integer numInsideRelationsA = tempFrameA.inside.size();
-						Integer numAboveRelationsA = tempFrameA.above.size();
-	    				//List<String> typesRelationsA = new ArrayList<String>();
-	    				
-	    				// Look at relationships between current object and all others in FIgure A
-						/*for (int k = 0; k < figureARelationDiagram.relations[i].length; k++) {
-							if (figureARelationDiagram.relations[i][k] != null) {
-								numRelationsA++;
-								typesRelationsA.add(figureARelationDiagram.relations[i][k]);
-							}
-						}*/
-						
-						// Keep track of relationships this particular object has
-						Integer numInsideRelationsB = tempFrameB.inside.size();
-						Integer numAboveRelationsB = tempFrameB.above.size();
-	    				//List<String> typesRelationsB = new ArrayList<String>();
-	    				
-	    				//RELATIONSHIPS
-	    				
-	    				// Look at relationships between current object and all others in FIgure B
-	    				/*for (int k = 0; k < figureBRelationDiagram.relations[j].length; k++) {
-							if (figureBRelationDiagram.relations[j][k] != null) {
-								numRelationsB++;
-								typesRelationsB.add(figureBRelationDiagram.relations[j][k]);
-							}
-						}*/
-						
-						Integer numInsideUnmatchedRelations = Math.abs(numInsideRelationsA-numInsideRelationsB);
-						Integer numAboveUnmatchedRelations = Math.abs(numAboveRelationsA-numAboveRelationsB);
-						
-						Integer numTotalRelationsA = numInsideRelationsA+numAboveRelationsA; //Keep adding all other relations
-						Integer numTotalRelationsB = numInsideRelationsB+numAboveRelationsB; //Keep adding all other relations
-						
-						Integer numTotalUnmatchedRelations = Math.abs(numTotalRelationsA-numTotalRelationsB); 
-	    				
-	    				/*Integer numUnmatchedRelations = 0;
-	    				List<String> tempTypesRelationsA = new ArrayList<String>();
-	    				for (int k = 0; k < typesRelationsA.size(); k++) {
-	    					tempTypesRelationsA.add(typesRelationsA.get(0));
-	    				}
-    					
-    					List<String> tempTypesRelationsB = new ArrayList<String>();
-    					for (int k = 0; k < typesRelationsB.size(); k++) {
-	    					tempTypesRelationsB.add(typesRelationsB.get(0));
-	    				}*/
-						
-						
-    					
-    					/*
-    					// Match similar relations in Figure A and Figure B
-    					Integer relationsMatched = 0;
-	    				for (int k = 0; k < numRelationsA; k++) {
-	
-	    					for (int l = 0; l < numRelationsB; l++) {
-	    						if (tempTypesRelationsA.get(k).equals(tempTypesRelationsB.get(l))) {
-	    							tempTypesRelationsA.remove(k);
-	    							tempTypesRelationsB.remove(l);
-	    							numRelationsA-=1;
-	    							numRelationsB-=1;
-	    							break;
-	    							
-	    						}
-	    					}
-	    				}
-	    				*/
-	    				
-	    				//numUnmatchedRelations += tempTypesRelationsA.size();
-	    				//numUnmatchedRelations += tempTypesRelationsB.size();
-	    				
-						Integer tempWeight = 0;
-						
-	    				//possibleObjectsMatchedWeight[i][j]+=numInsideUnmatchedRelations*5;
-	    				tempWeight += numInsideUnmatchedRelations*5;
-	    				tempWeight += numAboveUnmatchedRelations*5;
-						
-						
-	    				
-	    				// Comparison of OTHER ATTRIBUTES
-	    				
-	    				if (tempFrameA.size.equals(tempFrameB.size) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=4;
-	    					tempWeight+=5;
-	    				}
-	    				if (coalesce(tempFrameA.alignment, "null").equals(coalesce(tempFrameB.alignment, "null")) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=2;
-	    					if(coalesce(tempFrameA.alignment, "null") != "null" & coalesce(tempFrameB.alignment, "null") != "null") {
+    	}
+    	
+    	Double percentRedFigure12 = 0.0; // RED (on both)
+    	Double percentGreenFigure12 = 0.0; // GREEN (only in A)
+    	Double percentBlueFigure12 = 0.0; // BLUE (only in B)
+    	
+    	if (numTotalRGBPixels.equals(0.0) == false) {
+	    	percentRedFigure12 += (numRedPixels/numTotalRGBPixels); // RED (on both)
+	    	percentGreenFigure12 += (numGreenPixels/numTotalRGBPixels); // GREEN (only in A)
+	    	percentBlueFigure12 += (numBluePixels/numTotalRGBPixels); // BLUE (only in B)
+    	}
+  	
+    	for (int i = 0; i < pixelsAccount.length(); i++){
+		    Character c = pixelsAccount.charAt(i);
+		    String cString = c.toString();
+		    
+		    if (cString.equals("R")) percentArrayReturnArrayList.add(percentRedFigure12);
+		    else if (cString.equals("G")) percentArrayReturnArrayList.add(percentGreenFigure12);
+		    else if (cString.equals("B")) percentArrayReturnArrayList.add(percentBlueFigure12);
+
+    	}
+    	
+    	return percentArrayReturnArrayList;
+    	
+    }
+    
+    
+    
+    
+    
+    // Reflect Image Horizontally
+    public BufferedImage reflectImageVertically(BufferedImage image) {
+    	BufferedImage imageReturn = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    	
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			imageReturn.setRGB(image.getWidth()-1-i, j, image.getRGB(i, j));
+    		}
+    	}
+    	
+    	return imageReturn;
+    }
+    
+    
+    // Reflect Image Vertically
+    public BufferedImage reflectImageHorizontally(BufferedImage image) {
+    	BufferedImage imageReturn = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    	
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			imageReturn.setRGB(i, image.getHeight()-1-j, image.getRGB(i, j));
+    		}
+    	}
+    	
+    	return imageReturn;
+    }
+
+    
+    // Rotate 90 degrees
+    public BufferedImage rotate90degrees(BufferedImage image, int numRotations) {
+    	BufferedImage imageReturn = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    	
+    	for (int r = 0; r < numRotations; r++) {  	
+    	
+	    	for(int i = 0 ; i < image.getWidth() ; i++) {
+	    		for(int j = 0 ; j < image.getHeight() ; j++) {
+	    			imageReturn.setRGB(image.getWidth()-1-j, i, image.getRGB(i, j));
+	    		}
+	    	}
+	    	
+    	}
+    	
+    	return imageReturn;
+    }
+    
+    //Subtract one image in another. I.E, take the black pixels of one image and make those same pixels
+    //white in the other image to see what black pixels are left
+    public BufferedImage subtractPixels(BufferedImage image1, BufferedImage image2) {
+    	BufferedImage imageReturn = new BufferedImage(image2.getWidth(), image2.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    	
+    	for(int i = 0 ; i < image1.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image1.getHeight() ; j++) {
+	    		imageReturn.setRGB(i,j,image2.getRGB(i, j));
+	    		Integer pixelRGB = image1.getRGB(i, j);
+	    		if (pixelRGB != -1) {
+	    			imageReturn.setRGB(i,j,-1);
+	    		}
+	    	}
+	    		    	
+    	}
+    	
+    	return imageReturn;
+    }
+    
+    
+    //Overlay images. I.E. take black pixels of one image and place them in another.
+    public BufferedImage overlayPixels(BufferedImage image1, BufferedImage image2) {
+    	BufferedImage imageReturn = new BufferedImage(image2.getWidth(), image2.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+    	for(int i = 0 ; i < image1.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image1.getHeight() ; j++) {
+	    		imageReturn.setRGB(i,j,image2.getRGB(i, j));
+	    		Integer pixelRGB = image1.getRGB(i, j);
+	    		if (pixelRGB != -1) {
+	    			imageReturn.setRGB(i,j,-16777216);
+	    		}
+	    	}
+	    		    	
+    	}
+    	
+    	return imageReturn;
+    }
+    
+    
+    //Overlay images and highlight colors 
+    //Pixels from image 1 paint one color.
+    //Pixels from image 2, paint another color.
+    // Pixels in both images, paint another color
+    // Returns actual image
+    public BufferedImage overlayPixelsHighlight(BufferedImage image1, BufferedImage image2, String pixelsAccount) {
+    	BufferedImage imageReturn = new BufferedImage(image2.getWidth(), image2.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+    	for(int i = 0 ; i < image1.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image1.getHeight() ; j++) {
+	    		Integer pixelRGB1 = image1.getRGB(i, j);
+	    		Integer pixelRGB2 = image2.getRGB(i, j);
+	    		Boolean pixelPainted = false;
+	    		
+	    		for (int k = 0; k < pixelsAccount.length(); k++){
+	    		    Character c = pixelsAccount.charAt(k);
+	    		    String cString = c.toString();
+	    		    
+	    		    if (cString.equals("R")) {
+	    		    	if (pixelRGB1 != -1 & pixelRGB2 != -1) {
+	    		    		imageReturn.setRGB(i,j,-4777216); //RED
+	    		    		pixelPainted = true;
+	    		    	}
+	    		    }
+	    		    else if (cString.equals("G")) {
+	    		    	if (pixelRGB1 != -1 & pixelRGB2 == -1) {
+	    		    		imageReturn.setRGB(i,j,-8000000); //GREEN
+	    		    		pixelPainted = true;
+	    		    	}
+	    		    }
+	    		    else if (cString.equals("B")) {
+	    		    	if (pixelRGB1 == -1 & pixelRGB2 != -1) {
+	    		    		imageReturn.setRGB(i,j,-12999999); //BLUE
+	    		    		pixelPainted = true;
+	    		    	}
+	    		    }
+
+	        	}
+	    		
+	    		if (pixelPainted == false) imageReturn.setRGB(i,j,-1);
+	    		
+	    		
+	    		
+	    	}
+	    		    	
+    	}
+    	
+    	return imageReturn;
+    }
+    
+    
+    
+    
+    
+    //Returns array of images: square representation of the object touching all sides 
+	//of the image. 
+    //Type 1 = Isolate Figure
+    // Type 2 = keep all surrounding pixels
+    public ArrayList<BufferedImage> separateObjects(BufferedImage image, String pixelAccount, int type) {
+    	ArrayList<BufferedImage> figureArray = new ArrayList<BufferedImage>();
+    	BufferedImage tempImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+    	
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+	    	for(int j = 0 ; j < image.getHeight() ; j++) {
+	    		tempImage.setRGB(i, j, image.getRGB(i, j));
+	    		
+	    	}
+    	}
+    	
+    	
+    	
+    	for(int i = 0 ; i < tempImage.getWidth() ; i++) {
+	    	for(int j = 0 ; j < tempImage.getHeight() ; j++) {
+	    		Integer pixelRGB = tempImage.getRGB(i, j);
+	    		//if (pixelRGB != -1) {
+	    		if ((pixelAccount.equals("RGB") & pixelRGB != -1) |
+		    				(pixelAccount.equals("RG") & pixelRGB != -1 & pixelRGB != -12999999) |
+		    				(pixelAccount.equals("RB") & pixelRGB != -1 & pixelRGB != -8000000)) {
+	    			HashMap<String,ArrayList <Integer>> xyPlotPoints = new HashMap<String, ArrayList <Integer>>();
+	    			
+	    			boolean hasNeighbor = true;
+	    			//ArrayList<ArrayList<Integer>> plotPointsToExamine = new ArrayList<ArrayList <Integer>>();
+	    			HashMap<String,ArrayList <Integer>> plotPointsToExamine = new HashMap<String, ArrayList <Integer>>();
+	    			
+	    			Integer currX = i+0;
+	    			Integer currY = j+0;
+	    			Integer currPixelCol = pixelRGB+0;
+	    			ArrayList<Integer> tempBlackPixel = new ArrayList<Integer>();
+	    			tempBlackPixel.add(currX);
+	    			tempBlackPixel.add(currY);
+	    			tempBlackPixel.add(currPixelCol);
+					String tempPixelRep = Integer.toString(currX) + Integer.toString(currY);
+					plotPointsToExamine.put(tempPixelRep,  tempBlackPixel);
+					
+					//Used to track minX, maxX, minY, maxY
+					Integer minXInt = currX;
+					Integer maxXInt = currX;
+					Integer minYInt = currY;
+					Integer maxYInt = currY;
+					String minXKey = tempPixelRep;
+					String maxXKey = tempPixelRep;
+					String minYKey = tempPixelRep;
+					String maxYKey = tempPixelRep;
+					
+	    			while (hasNeighbor) {
+	    				hasNeighbor = false;
+
+	    				// If not on left margin
+	    				if (currX > 0) {
+	    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+	    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX-1, currY) != -1) |
+	    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX-1, currY) != -1 & tempImage.getRGB(currX-1, currY) != -12999999) |
+	    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX-1, currY) != -1 & tempImage.getRGB(currX-1, currY) != -8000000)) {
+	    						//hasNeighbor = true;
+	    						Integer tempX = currX-1;
+	    						Integer tempY = currY+0;
 	    						
-	    						if (tempFrameA.alignment.equals("bottom") & tempFrameA.alignment.equals("top")) {
-	    							tempWeight+=2;
+	    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+	    						blackPixel.add(tempX);
+	    						blackPixel.add(tempY);
+	    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+	    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+	    						plotPointsToExamine.put(pixelRep,  blackPixel);
+	    						
+	    						
+	    						if (tempX < minXInt) {
+	    							minXInt = tempX;
+	    							minXKey = pixelRep;
 	    						}
-	    						else if (tempFrameA.alignment.equals("top") & tempFrameA.alignment.equals("bottom")) {
-	    							tempWeight+=2;
+	    						if (tempX > maxXInt) {
+	    							maxXInt = tempX;
+	    							maxXKey = pixelRep;
 	    						}
-	    						else if (tempFrameA.alignment.equals("left") & tempFrameA.alignment.equals("right")) {
-	    							tempWeight+=2;
+	    						if (tempY < minYInt) {
+	    							minYInt = tempY;
+	    							minYKey = pixelRep;
 	    						}
-	    						else if (tempFrameA.alignment.equals("right") & tempFrameA.alignment.equals("left")) {
-	    							tempWeight+=2;
+	    						if (tempY > maxYInt) {
+	    							maxYInt = tempY;
+	    							maxYKey = pixelRep;
 	    						}
-	    						else if (tempFrameA.alignment.equals("top-right") & tempFrameA.alignment.equals("top-left")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("top-left") & tempFrameA.alignment.equals("top-right")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("bottom-left") & tempFrameA.alignment.equals("bottom-right")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("bottom-right") & tempFrameA.alignment.equals("bottom-left")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("top-right") & tempFrameA.alignment.equals("bottom-right")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("bottom-right") & tempFrameA.alignment.equals("top-right")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("top-left") & tempFrameA.alignment.equals("bottom-left")) {
-	    							tempWeight+=2;
-	    						}
-	    						else if (tempFrameA.alignment.equals("bottom-left") & tempFrameA.alignment.equals("top-left")) {
-	    							tempWeight+=2;
-	    						}
-	    						else tempWeight+=4;
+	    						
 	    					}
-	    					else tempWeight+=4;
+	    					// If not on top margin
+	    					if (currY > 0) {
+	    						//if (tempImage.getRGB(currX-1, currY) != -1) {
+		    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX-1, currY-1) != -1) |
+		    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX-1, currY-1) != -1 & tempImage.getRGB(currX-1, currY-1) != -12999999) |
+		    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX-1, currY-1) != -1 & tempImage.getRGB(currX-1, currY-1) != -8000000)) {
+		    						//hasNeighbor = true;
+		    						
+		    						Integer tempX = currX-1;
+		    						Integer tempY = currY-1;
+		    						
+		    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+		    						blackPixel.add(tempX);
+		    						blackPixel.add(tempY);
+		    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+		    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+		    						plotPointsToExamine.put(pixelRep,  blackPixel);
+		    						
+		    						
+		    						if (tempX < minXInt) {
+		    							minXInt = tempX;
+		    							minXKey = pixelRep;
+		    						}
+		    						if (tempX > maxXInt) {
+		    							maxXInt = tempX;
+		    							maxXKey = pixelRep;
+		    						}
+		    						if (tempY < minYInt) {
+		    							minYInt = tempY;
+		    							minYKey = pixelRep;
+		    						}
+		    						if (tempY > maxYInt) {
+		    							maxYInt = tempY;
+		    							maxYKey = pixelRep;
+		    						}
+		    					}
+		    					
+		    					
+		    					
+		    				}
+	    					// If not on bottom margin
+		    				if (currY < tempImage.getHeight()-1) {
+		    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+		    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX-1, currY+1) != -1) |
+		    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX-1, currY+1) != -1 & tempImage.getRGB(currX-1, currY+1) != -12999999) |
+		    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX-1, currY+1) != -1 & tempImage.getRGB(currX-1, currY+1) != -8000000)) {
+		    						//hasNeighbor = true;
+		    						Integer tempX = currX-1;
+		    						Integer tempY = currY+1;
+		    						
+		    						
+		    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+		    						blackPixel.add(tempX);
+		    						blackPixel.add(tempY);
+		    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+		    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+		    						plotPointsToExamine.put(pixelRep,  blackPixel);
+		    						
+		    						
+		    						if (tempX < minXInt) {
+		    							minXInt = tempX;
+		    							minXKey = pixelRep;
+		    						}
+		    						if (tempX > maxXInt) {
+		    							maxYInt = tempX;
+		    							maxXKey = pixelRep;
+		    						}
+		    						if (tempY < minYInt) {
+		    							minYInt = tempY;
+		    							minYKey = pixelRep;
+		    						}
+		    						if (tempY > maxYInt) {
+		    							maxYInt = tempY;
+		    							maxYKey = pixelRep;
+		    						}
+		    					}
+		    				}
 	    				}
-	    				if (coalesce(tempFrameA.angle, "null").equals(coalesce(tempFrameB.angle,"null")) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=2;
-	    					if (coalesce(tempFrameA.angle, 999.0) != 999.0 & coalesce(tempFrameB.angle, 999.0) != 999.0) {
-	    						if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) % 90.0 == 0.0) { // Reflection
-	    							tempWeight+=2;
+	    				// If not on right margin
+	    				if (currX < tempImage.getWidth()-1) {
+	    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+	    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX+1, currY) != -1) |
+	    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX+1, currY) != -1 & tempImage.getRGB(currX+1, currY) != -12999999) |
+	    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX+1, currY) != -1 & tempImage.getRGB(currX+1, currY) != -8000000)) {
+	    						//hasNeighbor = true;
+	    						Integer tempX = currX+1;
+	    						Integer tempY = currY+0;
+	    						
+	    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+	    						blackPixel.add(tempX);
+	    						blackPixel.add(tempY);
+	    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+	    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+	    						plotPointsToExamine.put(pixelRep,  blackPixel);
+	    						
+	    						
+	    						if (tempX < minXInt) {
+	    							minXInt = tempX;
+	    							minXKey = pixelRep;
 	    						}
-	    						else {
-	    							tempWeight+=3;
+	    						if (tempX > maxXInt) {
+	    							maxXInt = tempX;
+	    							maxXKey = pixelRep;
+	    						}
+	    						if (tempY < minYInt) {
+	    							minYInt = tempY;
+	    							minYKey = pixelRep;
+	    						}
+	    						if (tempY > maxYInt) {
+	    							maxYInt = tempY;
+	    							maxYKey = pixelRep;
 	    						}
 	    					}
-	    					else tempWeight+=3;
+	    					// If not on top margin
+	    					if (currY > 0) {
+	    						//if (tempImage.getRGB(currX-1, currY) != -1) {
+		    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX+1, currY-1) != -1) |
+		    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX+1, currY-1) != -1 & tempImage.getRGB(currX+1, currY-1) != -12999999) |
+		    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX+1, currY-1) != -1 & tempImage.getRGB(currX+1, currY-1) != -8000000)) {
+		    						//hasNeighbor = true;
+		    						Integer tempX = currX+1;
+		    						Integer tempY = currY-1;
+		    						
+		    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+		    						blackPixel.add(tempX);
+		    						blackPixel.add(tempY);
+		    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+		    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+		    						plotPointsToExamine.put(pixelRep,  blackPixel);
+		    						
+		    						
+		    						if (tempX < minXInt) {
+		    							minXInt = tempX;
+		    							minXKey = pixelRep;
+		    						}
+		    						if (tempX > maxXInt) {
+		    							maxXInt = tempX;
+		    							maxXKey = pixelRep;
+		    						}
+		    						if (tempY < minYInt) {
+		    							minYInt = tempY;
+		    							minYKey = pixelRep;
+		    						}
+		    						if (tempY > maxYInt) {
+		    							maxYInt = tempY;
+		    							maxYKey = pixelRep;
+		    						}
+		    					}
+		    				}
+	    					// If not on bottom margin
+		    				if (currY < tempImage.getHeight()-1) {
+		    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+		    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX+1, currY+1) != -1) |
+		    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX+1, currY+1) != -1 & tempImage.getRGB(currX+1, currY+1) != -12999999) |
+		    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX+1, currY+1) != -1 & tempImage.getRGB(currX+1, currY+1) != -8000000)) {
+		    						//hasNeighbor = true;
+		    						Integer tempX = currX+1;
+		    						Integer tempY = currY+1;
+		    						
+		    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+		    						blackPixel.add(tempX);
+		    						blackPixel.add(tempY);
+		    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+		    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+		    						plotPointsToExamine.put(pixelRep,  blackPixel);
+		    						
+		    						
+		    						if (tempX < minXInt) {
+		    							minXInt = tempX;
+		    							minXKey = pixelRep;
+		    						}
+		    						if (tempX > maxXInt) {
+		    							maxXInt = tempX;
+		    							maxXKey = pixelRep;
+		    						}
+		    						if (tempY < minYInt) {
+		    							minYInt = tempY;
+		    							minYKey = pixelRep;
+		    						}
+		    						if (tempY > maxYInt) {
+		    							maxYInt = tempY;
+		    							maxYKey = pixelRep;
+		    						}
+		    					}
+		    				}
 	    				}
-	    				if (coalesce(tempFrameA.shape, "null").equals(coalesce(tempFrameB.shape,"null")) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=3;
-	    					tempWeight+=6;
+	    				// If not on top margin
+	    				if (currY > 0) {
+	    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+	    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX, currY-1) != -1) |
+	    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX, currY-1) != -1 & tempImage.getRGB(currX, currY-1) != -12999999) |
+	    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX, currY-1) != -1 & tempImage.getRGB(currX, currY-1) != -8000000)) {
+	    						//hasNeighbor = true;
+	    						Integer tempX = currX+0;
+	    						Integer tempY = currY-1;
+	    						
+	    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+	    						blackPixel.add(tempX);
+	    						blackPixel.add(tempY);
+	    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+	    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+	    						plotPointsToExamine.put(pixelRep,  blackPixel);
+	    						
+	    						
+	    						if (tempX < minXInt) {
+	    							minXInt = tempX;
+	    							minXKey = pixelRep;
+	    						}
+	    						if (tempX > maxXInt) {
+	    							maxXInt = tempX;
+	    							maxXKey = pixelRep;
+	    						}
+	    						if (tempY < minYInt) {
+	    							minYInt = tempY;
+	    							minYKey = pixelRep;
+	    						}
+	    						if (tempY > maxYInt) {
+	    							maxYInt = tempY;
+	    							maxYKey = pixelRep;
+	    						}
+	    					}
 	    				}
-	    				if (coalesce(tempFrameA.fill,"null").equals(coalesce(tempFrameB.fill,"null")) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=1;
-	    					tempWeight+=1;
+	    				// If not on bottom margin
+	    				if (currY < tempImage.getHeight()-1) {
+	    					//if (tempImage.getRGB(currX-1, currY) != -1) {
+	    					if ((pixelAccount.equals("RGB") & tempImage.getRGB(currX, currY+1) != -1) |
+	    			    			(pixelAccount.equals("RG") & tempImage.getRGB(currX, currY+1) != -1 & tempImage.getRGB(currX, currY+1) != -12999999) |
+	    			    			(pixelAccount.equals("RB") & tempImage.getRGB(currX, currY+1) != -1 & tempImage.getRGB(currX, currY+1) != -8000000)) {
+	    						//hasNeighbor = true;
+	    						Integer tempX = currX+0;
+	    						Integer tempY = currY+1;
+	    						
+	    						ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+	    						blackPixel.add(tempX);
+	    						blackPixel.add(tempY);
+	    						blackPixel.add(tempImage.getRGB(tempX, tempY));
+	    						String pixelRep = Integer.toString(tempX) + Integer.toString(tempY);
+	    						plotPointsToExamine.put(pixelRep,  blackPixel);
+	    						
+	    						
+	    						if (tempX < minXInt) {
+	    							minXInt = tempX;
+	    							minXKey = pixelRep;
+	    						}
+	    						if (tempX > maxXInt) {
+	    							maxXInt = tempX;
+	    							maxXKey = pixelRep;
+	    						}
+	    						if (tempY < minYInt) {
+	    							minYInt = tempY;
+	    							minYKey = pixelRep;
+	    						}
+	    						if (tempY > maxYInt) {
+	    							maxYInt = tempY;
+	    							maxYKey = pixelRep;
+	    						}
+	    					}
 	    				}
+	    			
 	    				
-	    				weightMatches.add(tempWeight);
+	    				
+	    				
+
+	    				
+	    				/*try {
+	    				    Thread.sleep(500);                 //1000 milliseconds is one second.
+	    				} catch(InterruptedException ex) {
+	    				    Thread.currentThread().interrupt();
+	    				}*/
+	    				
+		    			ArrayList<Integer> blackPixel = new ArrayList<Integer>();
+						blackPixel.add(currX);
+						blackPixel.add(currY);
+						blackPixel.add(tempImage.getRGB(currX, currY));
+						String pixelRep = Integer.toString(currX) + Integer.toString(currY);
+						xyPlotPoints.put(pixelRep,  blackPixel);
+		    			
+						plotPointsToExamine.remove(pixelRep);
+						
+						tempImage.setRGB(currX, currY, -1);
+						
+						if (plotPointsToExamine.size() > 0) {
+							HashMap.Entry<String,ArrayList <Integer>> entry = plotPointsToExamine.entrySet().iterator().next();
+							currX = entry.getValue().get(0);
+							currY = entry.getValue().get(1);
+							hasNeighbor = true;
+						}
+						
+						
 	    				
 	    			}
-					weightMatchesAB.add(weightMatches);
-					framesBMatchedWithA.add(framesBInOrder);
+	    			
+	    			//TODO: Complete this function. Look at xyPlotPoints HashMap, find minX, mminY, maxX, maxY.
+		    		//Based on those values create a square representation of the object touching all sides 
+		    		//of the image.
+		    		
+		    		Integer widthObject =  maxXInt-minXInt+1;
+		    		Integer heightObject =  maxYInt-minYInt+1;
+					
+		    		
+		    		/*for(int k = 0 ; k < objectImage.getWidth() ; k++) {
+		        		for(int l = 0 ; l < objectImage.getHeight() ; l++) {
+		        			objectImage.setRGB(k, l, -1);
+		        		}
+		        	}*/
+		    		
+		    		if (type == 1) {
+		    			// CREATE TRANSPARENT BACKGROUND WITH WIDTH AND HEIGHT OF OBJECT IDENTIFIED 
+		    			BufferedImage objectImage = new BufferedImage(widthObject, heightObject, BufferedImage.TYPE_INT_ARGB);
+		    			for(String pixelRep : xyPlotPoints.keySet()) {
+		    				
+			    			ArrayList<Integer> xyArray = xyPlotPoints.get(pixelRep);
+			    			Integer newX = xyArray.get(0)-minXInt;
+			    			Integer newY = xyArray.get(1)-minYInt;
+			    			Integer newPixelColor = xyArray.get(2);
+			    			
+			    			objectImage.setRGB(newX, newY, newPixelColor);
 
-				}
+			    		}
+		    			
+		    			figureArray.add(objectImage);
+		    		}
+		    		else if (type == 2) {
+		    			// CREATE ALL WHITE IMAGE WITH WIDTH AND HEIGHT OF ORIGINAL FIGURE
+		    			BufferedImage objectImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		    			for(int k = 0 ; k < image.getWidth(); k++) {
+			        		for(int l = 0 ; l < image.getHeight(); l++) {
+			        			objectImage.setRGB(k, l, -1);
+			        		}
+		    			}
+		    			
+		    			
+		    			for(String pixelRep : xyPlotPoints.keySet()) {
+		    				ArrayList<Integer> xyArray = xyPlotPoints.get(pixelRep);
+			    			objectImage.setRGB(xyArray.get(0), xyArray.get(1), xyArray.get(2));
+			    		}
+		    			
+		    			figureArray.add(objectImage);
+		    		}
+		    		
+		    		
+		    		
+		    		
 					
-				// Now that we have our possibleObjectsMatchedWeight matrix populated, let's take a look which figures have the lowest
-				// relationship weight between them.
-				
-				List<Integer> matchedAIndexes = new ArrayList<Integer>();
-				List<Integer> matchedBIndexes = new ArrayList<Integer>();
-				
-				for (int i = 0; i < framesAInOrder.size(); i++) {
-					Integer minWeight = 9999;
-					//HashMap<Integer,List<Integer>> matchedIndexes = new HashMap<Integer, List<Integer>>();
-					//List<Integer> matchedBIndexWeight = new ArrayList<Integer>();
-					Integer minMatchIndexB = -1;
-					for (int j = 0; j < framesBMatchedWithA.get(i).size(); j++) {
-						
-						if (weightMatchesAB.get(i).get(j) < minWeight) {
-							minWeight = weightMatchesAB.get(i).get(j);
-							minMatchIndexB = j;
-						}
-						
-						
-					}
-					
-					
-					matchedAIndexes.add(i);
-					matchedBIndexes.add(minMatchIndexB);
-			
-				}
-				
-				
-				SemanticNetwork semanticNetwork = new SemanticNetwork(figureARelationDiagram, figureBRelationDiagram, problemType);
-				
-				
-				
-				// Temporary Arrays used to keep track of which objects have already been added to transformations arrays.
-				// After each matched object is added, the index will be removed from these temp arrays.
-				// Remaining indexes will be either Deleted objects from Figure A, or Added objects to Figure B
-				List<Integer> tempAIndexes = new ArrayList<Integer>();
-				List<Integer> tempBIndexes = new ArrayList<Integer>();
-				for (int i = 0; i < numShapesA; i++) {
-					tempAIndexes.add(i);
-				}
-				for (int i = 0; i < numShapesB; i++) {
-					tempBIndexes.add(i);
-				}
-				//// End Temp Arrays
-				
-				for (int i = 0; i < Math.max(numShapesA, numShapesB); i++) {
-					
-					List<String> transformations = new ArrayList<String>();
-					List<String> finalCharacteristic = new ArrayList<String>();
-					
-					if ((i < numShapesA) & (i < numShapesB)) {
-						//String objectStringA = figureARelationDiagram.objectArray.get(matchedAIndexes.get(i));
-						String objectStringA = framesAInOrder.get(matchedAIndexes.get(i));
-						//String objectStringB = figureBRelationDiagram.objectArray.get(matchedBIndexes.get(i));
-						String objectStringB = framesBMatchedWithA.get(i).get(matchedBIndexes.get(i));
-						
-						Frame tempFrameA = new Frame(figureARelationDiagram.frames.get(objectStringA));
-						Frame tempFrameB = new Frame(figureBRelationDiagram.frames.get(objectStringB));
-						
-						// Remove matched objects' indexes from temp index array. Will be used later
-						tempAIndexes.remove(matchedAIndexes.get(i));
-						tempBIndexes.remove(matchedBIndexes.get(i));
-						
-						
-						
-						
-						//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("shape"), "null")) == false) {
-						if (coalesce(tempFrameA.shape,"null").equals(coalesce(tempFrameB.shape,"null")) == false) {	
-							transformations.add("shape");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"));
-						}
-						//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("fill"), "null")) == false) {
-						if (coalesce(tempFrameA.fill, "null").equals(coalesce(tempFrameB.fill,"null")) == false) {	
-							transformations.add("fill");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"));
-						}
-						//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("angle"), "null")) == false) {
-						if (coalesce(tempFrameA.angle,"null").equals(coalesce(tempFrameB.angle,"null")) == false) {
-	    					//possibleObjectsMatchedWeight[i][j]+=2;
-							if (coalesce(tempFrameA.angle, 999.0) != 999.0 & coalesce(tempFrameB.angle, 999.0) != 999.0) {
-								if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 90.0 | 
-	    								Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 270.0) {
-	    							transformations.add("vreflection");
-	    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-	    						}
-								else if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 180.0) {
-	    							transformations.add("hreflection");
-	    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-								}
-	    						else {
-	    							transformations.add("angle");
-	    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-	    						}
-	    					}
-						}
-						//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("size"), "null")) == false) {
-						if (coalesce(tempFrameA.size, "null").equals(coalesce(tempFrameB.size, "null")) == false) {	
-							transformations.add("size");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"));
-						}
-						//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("alignment"), "null")) == false) {
-						if (coalesce(tempFrameA.alignment, "null").equals(coalesce(tempFrameB.alignment,"null")) == false) {
-							
-							if (tempFrameA.alignment.equals("bottom") & tempFrameB.alignment.equals("top")) {
-								transformations.add("hReflectionAlignment");
-								finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("top") & tempFrameB.alignment.equals("bottom")) {
-    							transformations.add("hReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("left") & tempFrameB.alignment.equals("right")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("right") & tempFrameB.alignment.equals("left")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("top-right") & tempFrameB.alignment.equals("top-left")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("top-left") & tempFrameB.alignment.equals("top-right")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("bottom-left") & tempFrameB.alignment.equals("bottom-right")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("bottom-right") & tempFrameB.alignment.equals("bottom-left")) {
-    							transformations.add("vReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("top-right") & tempFrameB.alignment.equals("bottom-right")) {
-    							transformations.add("hReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("bottom-right") & tempFrameB.alignment.equals("top-right")) {
-    							transformations.add("hReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("top-left") & tempFrameB.alignment.equals("bottom-left")) {
-    							transformations.add("hReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else if (tempFrameA.alignment.equals("bottom-left") & tempFrameB.alignment.equals("top-left")) {
-    							transformations.add("hReflectionAlignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-    						else {
-							
-    							transformations.add("alignment");
-    							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-    						}
-						}
-						
-						
-						semanticNetwork.figure1shapes.add(figureARelationDiagram.objects.get(objectStringA));
-						semanticNetwork.figure2shapes.add(figureBRelationDiagram.objects.get(objectStringB));
-					}
-					
-					else if (i >= numShapesA) {
-						//String objectStringB = figureBRelationDiagram.objectArray.get(tempBIndexes.get(0));
-						String objectStringB = framesBMatchedWithA.get(0).get(matchedBIndexes.get(0));
-						tempBIndexes.remove(0);
-						transformations.add("added");
-						finalCharacteristic.add("added");
-						semanticNetwork.figure2shapes.add(figureBRelationDiagram.objects.get(objectStringB));
-						semanticNetwork.addedShapes.add(figureBRelationDiagram.objects.get(objectStringB));
-					}
-					else if (i >= numShapesB) {
-						//String objectStringA = figureARelationDiagram.objectArray.get(tempAIndexes.get(0));
-						String objectStringA = framesAInOrder.get(matchedAIndexes.get(0));
-						tempAIndexes.remove(0);
-						transformations.add("deleted");
-						finalCharacteristic.add("deleted");
-						semanticNetwork.figure1shapes.add(figureARelationDiagram.objects.get(objectStringA));
-						semanticNetwork.deletedShapes.add(figureARelationDiagram.objects.get(objectStringA));
-					}
-					
-						semanticNetwork.transformations.add(transformations);
-						semanticNetwork.finalCharacteristic.add(finalCharacteristic);
-				}
-					//Call update weights
-					semanticNetwork.updateWeights();
-					possibleSemanticNetworks.add(semanticNetwork);
-					
-					//System.out.println("Just created first semantic network");
-					
-					for (int j = 0; j < semanticNetwork.figure1shapes.size(); j++) {
-						String tempShape = semanticNetwork.figure1shapes.get(j).getName();
-						RavensObject tempObject = semanticNetwork.figure1shapes.get(j);
-						
-						semanticNetwork.figure1shapesHashMap.put(tempShape, tempObject);
-					}
-					for (int j = 0; j < semanticNetwork.figure2shapes.size(); j++) {
-						semanticNetwork.figure2shapesHashMap.put(semanticNetwork.figure2shapes.get(j).getName(), semanticNetwork.figure2shapes.get(j));
-					}
-				
-			
-			}
-			
-			// Both FIGURE A and FIGURE B have only one shape
-			else if (figureBRelationDiagram.numShapes == 1) {
-				SemanticNetwork semanticNetwork = new SemanticNetwork(figureARelationDiagram, figureBRelationDiagram, "2x2");
-				
-				String frameAValue = figureARelationDiagram.objectArray.get(0);
-				String frameBValue = figureBRelationDiagram.objectArray.get(0);
-				
-				Frame tempFrameA = new Frame(figureARelationDiagram.frames.get(frameAValue));
-				Frame tempFrameB = new Frame(figureBRelationDiagram.frames.get(frameBValue));
-				
-				String objectStringA = frameAValue;
-				String objectStringB = frameBValue;
-				
-				semanticNetwork.figure1shapes = figureARelationDiagram.ravensObjectArray;
-				semanticNetwork.figure2shapes = figureBRelationDiagram.ravensObjectArray;
-				
-				// Add transformations that occurred to Semantic Network
-				List<String> transformations = new ArrayList<String>();
-				List<String> finalCharacteristic = new ArrayList<String>();
-				
-				//String shapeB = coalesce(figureBRelationDiagram.objects.get(figureBRelationDiagram.objectArray.get(0)).getAttributes().get("shape"),"null");
-				
-				//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("shape"), "null")) == false) {
-				if (coalesce(tempFrameA.shape,"null").equals(coalesce(tempFrameB.shape,"null")) == false) {	
-					transformations.add("shape");
-					finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("shape"));
-				}
-				//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("fill"), "null")) == false) {
-				if (coalesce(tempFrameA.fill, "null").equals(coalesce(tempFrameB.fill,"null")) == false) {	
-					transformations.add("fill");
-					finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("fill"));
-				}
-				//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("angle"), "null")) == false) {
-				if (coalesce(tempFrameA.angle,"null").equals(coalesce(tempFrameB.angle,"null")) == false) {
-					//possibleObjectsMatchedWeight[i][j]+=2;
-					if (coalesce(tempFrameA.angle, 999.0) != 999.0 & coalesce(tempFrameB.angle, 999.0) != 999.0) {
-						if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 90.0 | 
-								Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 270.0) {
-							transformations.add("vreflection");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-						}
-						else if (Math.min(tempFrameB.angle, tempFrameA.angle)+((Math.abs(tempFrameB.angle - tempFrameA.angle))/2.0) == 180.0) {
-							transformations.add("hreflection");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-						}
-						else {
-							transformations.add("angle");
-							finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("angle"));
-						}
-					}
-				}
-				//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("size"), "null")) == false) {
-				if (coalesce(tempFrameA.size, "null").equals(coalesce(tempFrameB.size, "null")) == false) {	
-					transformations.add("size");
-					finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("size"));
-				}
-				//if (coalesce(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"),"null").equals(coalesce(figureARelationDiagram.objects.get(objectStringA).getAttributes().get("alignment"), "null")) == false) {
-				if (coalesce(tempFrameA.alignment, "null").equals(coalesce(tempFrameB.alignment,"null")) == false) {
-					
-					if (tempFrameA.alignment.equals("bottom") & tempFrameB.alignment.equals("top")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("top") & tempFrameB.alignment.equals("bottom")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("left") & tempFrameB.alignment.equals("right")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("right") & tempFrameB.alignment.equals("left")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("top-right") & tempFrameB.alignment.equals("top-left")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("top-left") & tempFrameB.alignment.equals("top-right")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("bottom-left") & tempFrameB.alignment.equals("bottom-right")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("bottom-right") & tempFrameB.alignment.equals("bottom-left")) {
-						transformations.add("vReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("top-right") & tempFrameB.alignment.equals("bottom-right")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("bottom-right") & tempFrameB.alignment.equals("top-right")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("top-left") & tempFrameB.alignment.equals("bottom-left")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else if (tempFrameA.alignment.equals("bottom-left") & tempFrameB.alignment.equals("top-left")) {
-						transformations.add("hReflectionAlignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-					else {
-					
-						transformations.add("alignment");
-						finalCharacteristic.add(figureBRelationDiagram.objects.get(objectStringB).getAttributes().get("alignment"));
-					}
-				}
-					
-				semanticNetwork.transformations.add(transformations);
-				semanticNetwork.finalCharacteristic.add(finalCharacteristic);
-				
-				//Call update weights
-				semanticNetwork.updateWeights();
-				possibleSemanticNetworks.add(semanticNetwork);
-				
-				//System.out.println("Just created first semantic network");
-				
-				for (int i = 0; i < semanticNetwork.figure1shapes.size(); i++) {
-					String tempShape = semanticNetwork.figure1shapes.get(i).getName();
-					RavensObject tempObject = semanticNetwork.figure1shapes.get(i);
-					
-					semanticNetwork.figure1shapesHashMap.put(tempShape, tempObject);
-				}
-				for (int i = 0; i < semanticNetwork.figure2shapes.size(); i++) {
-					semanticNetwork.figure2shapesHashMap.put(semanticNetwork.figure2shapes.get(i).getName(), semanticNetwork.figure2shapes.get(i));
-				}
-				
-			}
-		
-		//}
-		//else {
-		//	return null;
-		//}
-		
-		
-		return possibleSemanticNetworks;
-    }
-		
-    
-    // Return Array of Possible Answers
-    public List<RelationDiagram> buildAnswerRelationDiagram(List<SemanticNetwork> relationSemanticNetworkArray, List<SemanticNetwork> transformationSemanticNetworkArray, RelationDiagram initialRelationDiagram) {
-    	List<RelationDiagram> possibleAnswersRelationDiagram = new ArrayList<RelationDiagram>();
-    	
-    	// Create temporary Relation Diagram identical to initial figure (which has frame diagram) to make changes to.
-    	RelationDiagram tempRelationDiagram = new RelationDiagram();
-		tempRelationDiagram.buildDiagram(initialRelationDiagram.ravensFigure);
-    	
-		
-		// Iterate through Semantic Diagrams which contain possible relations between the figure to be transformed, and the figure we are comparing it to
-    	for (int i = 0; i < relationSemanticNetworkArray.size(); i++) {
-			SemanticNetwork relationSemanticNetwork = relationSemanticNetworkArray.get(i);
-			
-			// Iterate through shapes in figure to be transformed
-			for (int j = 0; j < relationSemanticNetwork.figure2shapes.size(); j++) {
-				RavensObject shapeToTransform = relationSemanticNetwork.figure2shapes.get(j);
-				
-				// If there is a figure remaining in the figure we are getting our transformations from, i.e. remaining figures are not added
-				if (j < relationSemanticNetwork.figure1shapes.size()) {
-					RavensObject shapeTransformIsRelatedTo = relationSemanticNetwork.figure1shapes.get(j);
-				
-					
-					// Iterate through Semantic Networks which contain the actual transformations that will be applied
-					for (int k = 0; k < transformationSemanticNetworkArray.size(); k++) {
-						SemanticNetwork transformationSemanticNetwork = transformationSemanticNetworkArray.get(k);
-						
-						// Iterate through figures in the figure we are getting our transformations from
-						for (int l = 0; l < transformationSemanticNetwork.figure1shapes.size(); l++) {
-							List<String> transformationArray = new ArrayList<String>();
-							List<String> finalCharacteristic = new ArrayList<String>();
-							
-							// Find shapeTransformIsRelatedTo and build arrays to make transformations
-							if (transformationSemanticNetwork.figure1shapes.get(l).getName().equals(shapeTransformIsRelatedTo.getName())) {
-								transformationArray = transformationSemanticNetwork.transformations.get(l);
-								finalCharacteristic = transformationSemanticNetwork.finalCharacteristic.get(l);
-							}
-							
-							
-							// Make transformations
-							for (int m = 0; m < transformationArray.size(); m++) {
-								if (transformationArray.get(m).equals("deleted")) {
-									tempRelationDiagram.frames.remove(shapeToTransform.getName());
-								}
-								else {
-									if (transformationArray.get(m) == "vreflection") {
-										Double tempAngle = tempRelationDiagram.frames.get(shapeToTransform.getName()).angle;
-										if (Math.floor(tempAngle/90.0) == 0.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 90.0 + (90.0-tempAngle);
-										}
-										else if (Math.floor(tempAngle/90.0) == 1.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 90.0 - (tempAngle-90.0);
-										}
-										else if (Math.floor(tempAngle/90.0) == 2.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 270.0 + (tempAngle+270.0);
-										}
-										else if (Math.floor(tempAngle/90.0) == 3.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 270.0 - (tempAngle-270.0);
-										}
-										
-									}
-									else if (transformationArray.get(m) == "hreflection") {
-										Double tempAngle = tempRelationDiagram.frames.get(shapeToTransform.getName()).angle;
-										if (Math.floor(tempAngle/180.0) == 0.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 180.0 + (180.0-tempAngle);
-										}
-										else if (Math.floor(tempAngle/180.0) == 1.0) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = 180.0 - (tempAngle-180.0);
-										}
-									}
-									else if (transformationArray.get(m) == "shape") {
-										tempRelationDiagram.frames.get(shapeToTransform.getName()).shape = finalCharacteristic.get(m);
-									}
-									else if (transformationArray.get(m) == "size") {
-										tempRelationDiagram.frames.get(shapeToTransform.getName()).size = finalCharacteristic.get(m);
-									}
-									else if (transformationArray.get(m) == "fill") {
-										tempRelationDiagram.frames.get(shapeToTransform.getName()).fill = finalCharacteristic.get(m);
-									}
-									else if (transformationArray.get(m) == "angle") {
-										tempRelationDiagram.frames.get(shapeToTransform.getName()).angle = Double.parseDouble(finalCharacteristic.get(m));
-									}
-									else if (transformationArray.get(m) == "vReflectionAlignment") {
-										String tempAlign = tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment;
-										if (tempAlign.equals("left")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "right";
-										}
-										else if (tempAlign.equals("right")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "left";
-										}
-										else if (tempAlign.equals("top-right")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "top-left";
-										}
-										else if (tempAlign.equals("top-left")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "top-right";
-										}
-										else if (tempAlign.equals("bottom-right")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "bottom-left";
-										}
-										else if (tempAlign.equals("bottom-left")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "bottom-right";
-										}
-									}
-									else if (transformationArray.get(m) == "hReflectionAlignment") {
-										String tempAlign = tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment;
-										if (tempAlign.equals("top")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "bottom";
-										}
-										else if (tempAlign.equals("bottom")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "top";
-										}
-										else if (tempAlign.equals("top-right")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "bottom-right";
-										}
-										else if (tempAlign.equals("top-left")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "bottom-left";
-										}
-										else if (tempAlign.equals("bottom-right")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "top-right";
-										}
-										else if (tempAlign.equals("bottom-left")) {
-											tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = "top-left";
-										}
-									} 
-									else if (transformationArray.get(m) == "alignment") {
-										tempRelationDiagram.frames.get(shapeToTransform.getName()).alignment = finalCharacteristic.get(m);
-									}
-								}
-								
-							}
-						}
-							
-						for (int l = 0; l < transformationSemanticNetwork.addedShapes.size(); l++) {
-							tempRelationDiagram.objects.put(transformationSemanticNetwork.addedShapes.get(l).getName(), transformationSemanticNetwork.addedShapes.get(l));
-							
-							/*String objectName = transformationSemanticNetwork.addedShapes.get(l).getName();
-							
-							for(String attributeName : tempRelationDiagram.objects.get(objectName).getAttributes().keySet()) {
-
-								String attributeValue = tempRelationDiagram.objects.get(objectName).getAttributes().get(attributeName);
-								
-								if ((attributeName.equals("shape") == false)
-										& (attributeName.equals("angle") == false)
-										& (attributeName.equals("fill") == false)
-										& (attributeName.equals("size") == false)
-										& (attributeName.equals("alignment") == false)) {
-									
-									if (attributeValue.length() > 1) {
-										attributeValue = attributeValue.replace(",", "");
-									}
-
-									
-									for (int m = 0; i < attributeValue.length(); i++){
-									    Character c = attributeValue.charAt(i);
-									    String cString = c.toString();
-									    
-										Integer relationObjectIndex = tempRelationDiagram.objectArray.indexOf(cString);
-										
-										this.relations[currObjectIndex][relationObjectIndex] = attributeName;
-										
-										
-										
-									}
-									
-								}*/
-							
-						}
-					}
-				}
-				
-			}
-			
-			
-			
-			possibleAnswersRelationDiagram.add(tempRelationDiagram);
+		    		
+	    		}
+	    		
+	    		
+	
+	    	}
     	}
     	
+    	return figureArray;
+    }
+    
+    
+    
+    // Calculate distance between two points. Points represented by arrays. 
+    // If arrays are not of equal size, -1 is returned.
+    public Double distance(ArrayList<Double> point1, ArrayList<Double> point2) {
+    	if (point1.size() == point2.size()) {
+    		Double distance = 0.0;
+    		for (int i = 0; i <  point1.size(); i++) {
+    			distance += (point1.get(i) - point2.get(i))*(point1.get(i) - point2.get(i));
+    		}
+    		distance = Math.sqrt(distance);
+    		return distance;
+    	}
+    	else {return -1.0;}
+    }
+    
+    
+    // Return maximum line weight of a specific color
+    public Integer lineWeight(BufferedImage image, Integer color) {
     	
+    	Integer maxLineWeight = 0;
+    	for(int i = 0 ; i < image.getWidth() ; i++) {
+    		
+    		Boolean consecutive = false;
+    		Integer tempLineWeightHor = 0;
+    		Integer tempLineWeightVer = 0;
+    		ArrayList<Integer> startPixel = new ArrayList<Integer>();
+    		ArrayList<Integer> endPixel = new ArrayList<Integer>();
+    		startPixel.add(image.getWidth()-1);
+    		startPixel.add(image.getHeight()-1);
+    		endPixel.add(image.getWidth()-1);
+    		endPixel.add(image.getHeight()-1);
+    		
+    		Integer tempLineWeightHorPix = 0;
+    		for(int j = 0 ; j < image.getHeight() ; j++) {
+    			
+    			
+    			
+    			
+    			// IF COLOR IS FOUND
+    			if (image.getRGB(i, j) == color) {
+    				tempLineWeightHorPix++; 	
+    				
+    				// IF END OF LINE IS REACHED
+        			if (j == image.getHeight()-1) {
+        				if (consecutive == false) {
+    	    				startPixel.set(0, i);
+    	    				startPixel.set(1, j);
+    	    				consecutive = true;
+        				}
+        				
+        				endPixel.set(0, i);
+    	    			endPixel.set(1, j);
+    	    			consecutive = false;
+        				
+    	    			Integer tempLineWeightVerPix = 0;
+    	    			for (int k = startPixel.get(1); k <= endPixel.get(1); k++) {
+    	    				
+    	    				Integer tempLineWeightVerK = 0;
+    	    				int x = startPixel.get(0);
+    	    				
+
+    	    				while(image.getRGB(x, k) == color) {
+    	    					tempLineWeightVerK++;
+    	    					x++;
+    	    					
+    	    					if (x == image.getWidth()) {
+    	    						break;
+    	    					}
+    	    				}
+    	    				
+    	    				if (tempLineWeightVerK > tempLineWeightVerPix) tempLineWeightVerPix = tempLineWeightVerK;
+    	    				
+    	    			}
+    	    			
+    	    			Integer tempLineWeight = Math.min(tempLineWeightHorPix, tempLineWeightVerPix);
+    	        		
+    	        		if (tempLineWeight > maxLineWeight) maxLineWeight = tempLineWeight;
+        			}
+        		
+    				
+        			// 
+        			else if (consecutive == false) {
+	    				startPixel.set(0, i);
+	    				startPixel.set(1, j);
+    				}
+    				consecutive = true;
+    			}
+    			
+    			// IF COLOR IS NOT FOUND AND IT IS NOT THE END OF THE LINE
+    			else {
+    				if (consecutive == true) {
+    					endPixel.set(0, i);
+	    				endPixel.set(1, j-1);
+	    				consecutive = false;
+    				
+	    				Integer tempLineWeightVerPix = 0;
+	    				for (int k = startPixel.get(1); k <= endPixel.get(1); k++) {
+	    					
+	    					Integer tempLineWeightVerK = 0;
+	    					int x = startPixel.get(0);
+	    					
+	    					while(image.getRGB(x, k) == color & x < image.getWidth()) {
+	    						tempLineWeightVerK++;
+	    						x++;
+	    						
+	    						if (x == image.getWidth()) {
+    	    						break;
+    	    					}
+	    					}
+	    					
+	    					if (tempLineWeightVerK > tempLineWeightVerPix) tempLineWeightVerPix = tempLineWeightVerK;
+	    					
+	    				}
+	    				
+	    				Integer tempLineWeight = Math.min(tempLineWeightHorPix, tempLineWeightVerPix);
+	        			
+	        			if (tempLineWeight > maxLineWeight) maxLineWeight = tempLineWeight;
+    				}
+	
+    			}
+    			
+    			
+    			
+				
+    		}
+    	}
     	
-    	return possibleAnswersRelationDiagram;
+
+    	
+    	return maxLineWeight;
     }
     
     
@@ -979,5 +1554,75 @@ public class Agent {
         return a == null ? b : a;
     }
     
+    
+    
+    
+    // REMOVE TRAILING PIXELS CAUSED BY mis-alignment when overlaying images
+    public BufferedImage removeTrailingPixels(BufferedImage image) {
+	    // REMOVE TRAILING PIXELS FROM OVERLAYED IMAGES/////////////////////////////////////////
+		ArrayList <BufferedImage> objectsOverlayRG = separateObjects(image, "RG", 2);
+		ArrayList <BufferedImage> objectsOverlayRB = separateObjects(image, "RB", 2);
+
+		
+		//// REMOVE TRAILING PIXELS
+		
+		// Iterate through different RG objects in Overlayed Image AB
+		for (int i = 0; i < objectsOverlayRG.size(); i++) {
+			Integer numRedPixels = numColorPixels(objectsOverlayRG.get(i),-4777216);
+			Integer numGreenPixels = numColorPixels(objectsOverlayRG.get(i),-8000000);
+			
+			Integer numTotalColorPixels = numRedPixels+numGreenPixels;
+			
+			Integer greenLineWeight = lineWeight(objectsOverlayRG.get(i),-8000000);
+			
+			// IF percentage of green pixels to total colored pixels is less than 15%
+			if (numGreenPixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | greenLineWeight < 2) {
+				
+				// Make green pixels white in original overlayed image for that particular figure
+				for(int j = 0 ; j < objectsOverlayRG.get(i).getWidth() ; j++) {
+		    		for(int k = 0 ; k < objectsOverlayRG.get(i).getHeight() ; k++) {
+		    			Integer pixelRGB = objectsOverlayRG.get(i).getRGB(j, k);
+		    			if (pixelRGB == -8000000) {
+		    				image.setRGB(j, k, -1);  
+		    				objectsOverlayRG.get(i).setRGB(j, k, -1);
+		    			}
+		    		}
+		    	}	 
+			}
+			
+		}
+		
+		
+		
+		// Iterate through different RB objects in Overlayed Image AB
+		for (int i = 0; i < objectsOverlayRB.size(); i++) {
+			Integer numRedPixels = numColorPixels(objectsOverlayRB.get(i),-4777216);
+			Integer numBluePixels = numColorPixels(objectsOverlayRB.get(i),-12999999);
+			
+			Integer numTotalColorPixels = numRedPixels+numBluePixels;
+			
+			Integer blueLineWeight = lineWeight(objectsOverlayRB.get(i),-12999999);
+			
+			// IF percentage of blue pixels to total colored pixels is less than 15%
+			if (numBluePixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | blueLineWeight < 2) {
+				
+				// Make blue pixels white in original overlayed image for that particular figure
+				for(int j = 0 ; j < objectsOverlayRB.get(i).getWidth() ; j++) {
+		    		for(int k = 0 ; k < objectsOverlayRB.get(i).getHeight() ; k++) {
+		    			Integer pixelRGB = objectsOverlayRB.get(i).getRGB(j, k);
+		    			if (pixelRGB == -12999999) {
+		    				image.setRGB(j, k, -1); 
+		    				objectsOverlayRB.get(i).setRGB(j, k, -1);
+		    			}
+		    		}
+		    	}	 
+			}
+			
+		}
+		
+		
+		return image;
+    
+    }
     
 }
