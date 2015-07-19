@@ -50,7 +50,7 @@ public class Agent2 {
 	public static int navyBlueColor = -50000000;
 	public static int blackColor = -16777216;
 	
-	public static Double minDistance = Double.POSITIVE_INFINITY;
+	public static Double minDistance = 0.1;
 	public static Double minDistanceDiff = 0.5;
 	public static String colorsInOrder3x3 = "RGBPVT";
 	public static String colorsNoOrder3x3 = "RGB";
@@ -59,11 +59,13 @@ public class Agent2 {
 	public static Integer resizePercentage = 25;
 	
 	public static Boolean noOrder = true;
-	public static Boolean inOrder = false;
-	public static Boolean ratio = false;
+	public static Boolean inOrder = true;
+	public static Boolean classificationHor = true;
+	public static Boolean classificationVer = true;
+	public static Boolean classificationDiag = true;
 	
-	public static Double percentRedClassification = 0.9;
-	public static Integer numPixelsDiffConstantChange = 20;
+	public static Double percentRedClassification = 0.95;
+	public static Integer numPixelsDiffConstantChange = 150;
 	
     public Agent2() {
         
@@ -103,7 +105,7 @@ public class Agent2 {
     	//BLUE = blueColor
     	
     	
-    	
+    	System.out.println(problem.getName());
     	
     	BufferedImage testColors = new BufferedImage(700, 700, BufferedImage.TYPE_INT_ARGB); 
     	for (int i = 0; i < 700; i++) {
@@ -160,14 +162,66 @@ public class Agent2 {
 	    	} catch(Exception ex) {}
 	    	
 	    	
+	    	//Image Array
+	    	ArrayList<BufferedImage> imageArray = new ArrayList<BufferedImage>();
+	    	imageArray.add(figureAImage);
+	    	imageArray.add(figureBImage);
+	    	imageArray.add(figureCImage);
 	    	
 	    	
-	    	ArrayList<ArrayList <Double>> distanceArrays = compareProcess2x2(figureAImage, 
+	    	
+	    	ArrayList<Integer> possibleAnswers = new ArrayList<Integer>();
+	    	
+	    	if (classificationHor) {
+	    		possibleAnswers = probClassComp(imageArray, answersToCompare, problem, 1);
+	    	}
+	    		
+	    	if (possibleAnswers.size() == 0) {
+	    		ArrayList<ArrayList<ArrayList <Double>>> distanceArrays = compareProcess2x2(figureAImage, 
+	    				figureBImage, figureCImage, problem, answersToCompare, 1);
+	    		
+	    		possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    		
+	    	}
+	    	else if (possibleAnswers.size() == 1) {
+	    		System.out.println("Answer by class: " + possibleAnswers.get(0));
+	    		System.out.println("");
+	    		return possibleAnswers.get(0);
+	    	}
+	    	else {
+	    		ArrayList<ArrayList<ArrayList <Double>>> distanceArrays = compareProcess2x2(figureAImage, 
+	    				figureBImage, figureCImage, problem, possibleAnswers, 1);
+	    		
+	    		possibleAnswers = minDistance(distanceArrays, possibleAnswers, 1);
+	    	}
+	    	
+	    	
+	    	
+	    	if (possibleAnswers.size() == 0) {
+	    		System.out.println("SKIPPED");
+	    		return -1;
+	    	}
+	    	else if (possibleAnswers.size() == 1) {
+	    		System.out.println("Answer by process: " + possibleAnswers.get(0));
+	    		System.out.println("");
+	    		return possibleAnswers.get(0);
+	    	}
+	    	else {
+	    		System.out.println("Possible Answers: " + possibleAnswers);
+	    		System.out.println("");
+	    		return -1;
+	    	}
+	    	
+	    	
+	    	
+	    	
+	    	
+	    	/*ArrayList<ArrayList <Double>> distanceArrays = compareProcess2x2(figureAImage, 
 	    			figureBImage, figureCImage, problem, answersToCompare, 1);
 	    	
 	    	
 	    	//NEED TO UNCOMMENT FOR SOLVING 2x2 PROBLEMS
-	    	/*ArrayList<Integer> possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    	ArrayList<Integer> possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
 	    	
 	    	if (possibleAnswers.size() == 0) {
 	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " SKIPPED");
@@ -187,9 +241,9 @@ public class Agent2 {
 	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswersReflect.get(0));
 	    	
 	    		return  possibleAnswersReflect.get(0);
-	    	}*/
+	    	}
 	    	///////////////////////////////////////////
-	    	return -1; // Remove after fixing above
+	    	return -1; // Remove after fixing above*/
 	    	
     	}
     	else {
@@ -240,12 +294,62 @@ public class Agent2 {
 	    	imageArray.add(figureGImage);
 	    	imageArray.add(figureHImage);
 	    	
-	    	ArrayList<Integer> horClassArray = problemClassification(imageArray);
 	    	
-	    	System.out.println(problem.getName() + " " + horClassArray);
+	    	ArrayList<Integer> possibleAnswersHor = new ArrayList<Integer>();
+	    	ArrayList<Integer> possibleAnswersVer = new ArrayList<Integer>();
+	    	ArrayList<Integer> possibleAnswersDiag = new ArrayList<Integer>();
+	    	ArrayList<Integer> possibleAnswers = new ArrayList<Integer>();
 	    	
-	    	ArrayList<ArrayList<ArrayList <Double>>> distanceArrays = compareProcess3x3(imageArray, 
-	    			problem, answersToCompare, 1);
+	    	if (classificationHor) {
+	    		possibleAnswersHor = probClassComp(imageArray, answersToCompare, problem, 1);	    		
+	    	}
+	    	if (classificationVer) {
+	    		possibleAnswersVer = probClassComp(imageArray, answersToCompare, problem, 2);	    		
+	    	}
+	    	if (classificationDiag) {
+	    		possibleAnswersDiag = probClassComp(imageArray, answersToCompare, problem, 3);	    		
+	    	}
+	    	
+	    	
+	    	// Merge all three possible answers
+	    	possibleAnswers = (ArrayList<Integer>) possibleAnswersHor.clone();
+	    	for (int i = 0; i < possibleAnswersVer.size(); i++) {
+	    		Boolean matched = false;
+	    		for (int j = 0; i < possibleAnswers.size(); j++) {
+	    			if (possibleAnswers.get(j) == possibleAnswersVer.get(i)) matched = true;
+	    		}
+	    		if (matched == false) possibleAnswers.add(possibleAnswersVer.get(i));
+	    	}
+	    	for (int i = 0; i < possibleAnswersDiag.size(); i++) {
+	    		Boolean matched = false;
+	    		for (int j = 0; i < possibleAnswers.size(); j++) {
+	    			if (possibleAnswers.get(j) == possibleAnswersDiag.get(i)) matched = true;
+	    		}
+	    		if (matched == false) possibleAnswers.add(possibleAnswersDiag.get(i));
+	    	}
+	    	
+	    	
+	    	
+	    	if (possibleAnswers.size() == 0) {
+	    		ArrayList<ArrayList<ArrayList <Double>>> distanceArrays = compareProcess3x3(imageArray, 
+		    			problem, answersToCompare, 1);
+	    		
+	    		possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    		
+	    	}
+	    	else if (possibleAnswers.size() == 1) {
+	    		System.out.println("Answer by class: " + possibleAnswers.get(0));
+	    		System.out.println("");
+	    		return possibleAnswers.get(0);
+	    	}
+	    	else {
+	    		ArrayList<ArrayList<ArrayList <Double>>> distanceArrays = compareProcess3x3(imageArray, 
+		    			problem, possibleAnswers, 1);
+	    		
+	    		possibleAnswers = minDistance(distanceArrays, possibleAnswers, 1);
+	    	}
+	    	
+	    	
 	    	
 	    	
 	    	/*ArrayList<ArrayList <Double>> distanceArraysACG = compareProcess2x2(figureAImage, 
@@ -270,18 +374,20 @@ public class Agent2 {
 	    	}*/
 	    	
 	    	
-	    	ArrayList<Integer> possibleAnswers = minDistance(distanceArrays, answersToCompare, 1);
+	    	
 	    	
 	    	if (possibleAnswers.size() == 0) {
-	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " SKIPPED");
+	    		System.out.println("SKIPPED");
 	    		return -1;
 	    	}
 	    	else if (possibleAnswers.size() == 1) {
-	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " Answer: " + possibleAnswers.get(0));
+	    		System.out.println("Answer by process: " + possibleAnswers.get(0));
+	    		System.out.println("");
 	    		return possibleAnswers.get(0);
 	    	}
 	    	else {
-	    		System.out.println(problem.getName() + " " + problem.getProblemType() + " " + possibleAnswers);
+	    		System.out.println("Possible Answers: " + possibleAnswers);
+	    		System.out.println("");
 	    		return -1;
 	    	}
 	    	/*else {
@@ -384,7 +490,7 @@ public class Agent2 {
     	System.out.println(figureBNumPixels);
     	System.out.println(figureCNumPixels);*/
 
-
+    	
     }
  
     
@@ -600,12 +706,14 @@ public class Agent2 {
     		//Resize answer choice
     		if (resizeFigures) figureImage = imageResize(figureImage, resizePercentage);
     		
-    		
+    		//Horizontal
     		ArrayList<BufferedImage> imageGHAnsArray = new ArrayList<BufferedImage>();
     		imageGHAnsArray.add(imageArray.get(6));
     		imageGHAnsArray.add(imageArray.get(7));
     		imageGHAnsArray.add(figureImage);
     		
+    		
+    		//Vertical
     		ArrayList<BufferedImage> imageCFAnsArray = new ArrayList<BufferedImage>();
     		imageCFAnsArray.add(imageArray.get(2));
     		imageCFAnsArray.add(imageArray.get(5));
@@ -842,8 +950,8 @@ public class Agent2 {
     	
     	ArrayList<ArrayList<ArrayList<Double>>> distanceArrays = new ArrayList<ArrayList<ArrayList<Double>>>();
     	
-    	distanceArrays.add(distanceArraysInOrder);
-    	distanceArrays.add(distanceArraysNoOrder);
+    	if (distanceArraysInOrder.size() > 0) distanceArrays.add(distanceArraysInOrder);
+    	if (distanceArraysNoOrder.size() > 0) distanceArrays.add(distanceArraysNoOrder);
     	return distanceArrays;
     	
     	
@@ -854,7 +962,7 @@ public class Agent2 {
  // OVERLAY, REMOVE TRAILING, COMPARE DISTANCES. Specific for 2x2 problems.
     // TYPE: 1 = normal
     //       2 = reflected
-    public ArrayList<ArrayList<Double>> compareProcess2x2(BufferedImage figureAImage, BufferedImage figureBImage, 
+    public ArrayList<ArrayList<ArrayList<Double>>> compareProcess2x2(BufferedImage figureAImage, BufferedImage figureBImage, 
     		BufferedImage figureCImage, RavensProblem problem, ArrayList<Integer> answersToCompare, Integer type) {
     	
     	BufferedImage overlayPixelsAB = null;
@@ -863,7 +971,7 @@ public class Agent2 {
     	ArrayList<Double> rgbPerAB = new ArrayList<Double>();
     	ArrayList<Double> rgbPerAC = new ArrayList<Double>();
     	
-    	BufferedImage reflectVerFigureImageA = reflectImageVertically(figureAImage);
+    	/*BufferedImage reflectVerFigureImageA = reflectImageVertically(figureAImage);
 		BufferedImage reflectHorFigureImageA = reflectImageHorizontally(figureAImage);   		
 		
 		BufferedImage overlayPixelsABReflect = overlayPixelsHighlight(reflectVerFigureImageA, figureBImage, "RGB");
@@ -889,17 +997,17 @@ public class Agent2 {
     		rgbPerAB = rgbPerABReflect;
     		rgbPerAC = rgbPerACReflect;
     	}
-    	else if (type == 1) {
-    		overlayPixelsAB = overlayPixelsHighlight(figureAImage, figureBImage, "RGB");
-    		overlayPixelsAC = overlayPixelsHighlight(figureAImage, figureCImage, "RGB");
+    	else if (type == 1) {*/
+    	overlayPixelsAB = overlayPixelsHighlight(figureAImage, figureBImage, "RGB");
+    	overlayPixelsAC = overlayPixelsHighlight(figureAImage, figureCImage, "RGB");
     		
-    		overlayPixelsAB = removeTrailingPixels(overlayPixelsAB);
-        	overlayPixelsAC = removeTrailingPixels(overlayPixelsAC);
+    	overlayPixelsAB = removeTrailingPixels(overlayPixelsAB);
+        overlayPixelsAC = removeTrailingPixels(overlayPixelsAC);
         	
-        	rgbPerAB = percentRGBtoTotalRGBOneImage(overlayPixelsAB, "GB");
-        	rgbPerAC = percentRGBtoTotalRGBOneImage(overlayPixelsAC, "GB");
+        rgbPerAB = percentRGBtoTotalRGBOneImage(overlayPixelsAB, "GB");
+        rgbPerAC = percentRGBtoTotalRGBOneImage(overlayPixelsAC, "GB");
         	
-    	}
+    	//}
     	
     	
     	
@@ -913,12 +1021,8 @@ public class Agent2 {
     		ImageIO.write(overlayPixelsAC, "png", fileFigureOverlayPixelsAC);
 		} catch (IOException e) {}*/
 
-    	
-    	
-    	
-    	
-    	
-    	ArrayList<BufferedImage> objectsA = separateObjects(figureAImage, "RGB", 1);
+ 	
+    	/*ArrayList<BufferedImage> objectsA = separateObjects(figureAImage, "RGB", 1);
     	ArrayList<BufferedImage> objectsB = separateObjects(figureBImage, "RGB", 1);
     	ArrayList<BufferedImage> objectsC = separateObjects(figureCImage, "RGB", 1);
     	
@@ -929,15 +1033,13 @@ public class Agent2 {
     	Integer diffNumObjectsAB = numObjectsB-numObjectsA;
     	Integer diffNumObjectsAC = numObjectsC-numObjectsA;
     	
+    	ArrayList <Integer> diffNumObjectsArrayCAns = new ArrayList <Integer>();
+    	ArrayList <Integer> diffNumObjectsArrayBAns = new ArrayList <Integer>();*/
+    	
     	ArrayList <Double> distanceArrayCAns = new ArrayList <Double>();
     	ArrayList <Double> distanceArrayBAns = new ArrayList <Double>();
     	ArrayList <ArrayList <Double>> rgbPerCArray = new ArrayList <ArrayList <Double>>();
     	ArrayList <ArrayList <Double>> rgbPerBArray = new ArrayList <ArrayList <Double>>();
-    	
-    	ArrayList <Integer> diffNumObjectsArrayCAns = new ArrayList <Integer>();
-    	ArrayList <Integer> diffNumObjectsArrayBAns = new ArrayList <Integer>();
-    	
-    	
     	
     			
     	// Iterate through 6 answer choices and populate percentages of RGB pixels 
@@ -956,14 +1058,14 @@ public class Agent2 {
         	BufferedImage overlayPixelsBAns = null;
         	
         	
-        	if (type == 2 | sumPercentReflect < 0.01) {
+        	/*if (type == 2 | sumPercentReflect < 0.01) {
         		overlayPixelsCAns = overlayPixelsHighlight(reflectImageVertically(figureCImage), figureImage, "RGB");
         		overlayPixelsBAns = overlayPixelsHighlight(reflectImageHorizontally(figureBImage), figureImage, "RGB");
         	}
-        	else if (type == 1) {
-        		overlayPixelsCAns = overlayPixelsHighlight(figureCImage, figureImage, "RGB");
-        		overlayPixelsBAns = overlayPixelsHighlight(figureBImage, figureImage, "RGB");
-        	}
+        	else if (type == 1) {*/
+        	overlayPixelsCAns = overlayPixelsHighlight(figureCImage, figureImage, "RGB");
+        	overlayPixelsBAns = overlayPixelsHighlight(figureBImage, figureImage, "RGB");
+        	//}
 
     		overlayPixelsCAns = removeTrailingPixels(overlayPixelsCAns);
     		overlayPixelsBAns = removeTrailingPixels(overlayPixelsBAns);
@@ -998,12 +1100,12 @@ public class Agent2 {
         	Integer numObjects = objects.size();
 
         	
-        	Integer diffNumObjectsCAns = numObjects-numObjectsC;
-        	Integer diffNumObjectsBAns = numObjects-numObjectsB;
+        	//Integer diffNumObjectsCAns = numObjects-numObjectsC;
+        	//Integer diffNumObjectsBAns = numObjects-numObjectsB;
     		
         	
-        	diffNumObjectsArrayCAns.add(diffNumObjectsCAns);
-        	diffNumObjectsArrayBAns.add(diffNumObjectsBAns);
+        	//diffNumObjectsArrayCAns.add(diffNumObjectsCAns);
+        	//diffNumObjectsArrayBAns.add(diffNumObjectsBAns);
     		
 
         	 
@@ -1042,8 +1144,11 @@ public class Agent2 {
     	ArrayList<ArrayList<Double>> distanceArrays = new ArrayList<ArrayList<Double>>();
     	distanceArrays.add(distanceArrayCAns);
     	distanceArrays.add(distanceArrayBAns);
+    	ArrayList<ArrayList<ArrayList<Double>>> distanceArraysReturn = new ArrayList<ArrayList<ArrayList<Double>>>();
     	
-    	return distanceArrays;
+    	distanceArraysReturn.add(distanceArrays);
+    	
+    	return distanceArraysReturn;
     	
     }
     
@@ -1056,7 +1161,7 @@ public class Agent2 {
     	Double minDistanceDouble = Double.POSITIVE_INFINITY;
     	Double minDiffObjects = Double.POSITIVE_INFINITY;
     	
-    	for (int x = 1; x < distanceArrays.size(); x++) {
+    	for (int x = 0; x < distanceArrays.size(); x++) {
 	    	
 	    	
 	    	
@@ -1425,12 +1530,21 @@ public class Agent2 {
     	BufferedImage imageReturn = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
     	
     	for (int r = 0; r < numRotations; r++) {  	
-    	
-	    	for(int i = 0 ; i < image.getWidth() ; i++) {
-	    		for(int j = 0 ; j < image.getHeight() ; j++) {
-	    			imageReturn.setRGB(image.getWidth()-1-j, i, image.getRGB(i, j));
-	    		}
-	    	}
+    		if (r == 0) {
+		    	for(int i = 0 ; i < image.getWidth() ; i++) {
+		    		for(int j = 0 ; j < image.getHeight() ; j++) {
+		    			imageReturn.setRGB(image.getWidth()-1-j, i, image.getRGB(i, j));
+		    		}
+		    	}
+    		}
+		    else {
+		    	for(int i = 0 ; i < imageReturn.getWidth() ; i++) {
+		    		for(int j = 0 ; j < imageReturn.getHeight() ; j++) {
+		    			imageReturn.setRGB(imageReturn.getWidth()-1-j, i, imageReturn.getRGB(i, j));
+		    		}
+		    	}
+		    }
+		    	
 	    	
     	}
     	
@@ -2284,7 +2398,7 @@ public class Agent2 {
 			Integer greenLineWeight = lineWeight(objectsOverlayRG.get(i),greenColor);
 			
 			// IF percentage of green pixels to total colored pixels is less than 15%
-			if (numGreenPixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | greenLineWeight < 2) {
+			if (numGreenPixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | greenLineWeight < 3) {
 				
 				// Make green pixels white in original overlayed image for that particular figure
 				for(int j = 0 ; j < objectsOverlayRG.get(i).getWidth() ; j++) {
@@ -2312,7 +2426,7 @@ public class Agent2 {
 			Integer blueLineWeight = lineWeight(objectsOverlayRB.get(i),blueColor);
 			
 			// IF percentage of blue pixels to total colored pixels is less than 15%
-			if (numBluePixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | blueLineWeight < 2) {
+			if (numBluePixels.doubleValue()/numTotalColorPixels.doubleValue() < 0.15 | blueLineWeight < 3) {
 				
 				// Make blue pixels white in original overlayed image for that particular figure
 				for(int j = 0 ; j < objectsOverlayRB.get(i).getWidth() ; j++) {
@@ -2381,28 +2495,75 @@ public class Agent2 {
     
     /**
      * RETURN
-     * 1: Constant Change /
-     * 2: Subtract image1 from image2 /
-     * 3: Subtract image2 from image1 /
-     * 4: Keep constant pixels /
-     * 5: Reflection
-     * 6: Add images
-     * 7: No change
-     * 8: Keep non-constant pixels
+     * 0: Constant Change /
+     * 1: Subtract image1 from image2 /
+     * 2: Subtract image2 from image1 /
+     * 3: Keep constant pixels /
+     * 4: Reflection
+     * 5: Add images
+     * 6: No change
+     * 7: Keep non-constant pixels
+     * 
+     * TYPE
+     * 1: Horizontal
+     * 2: Vertical
+     * 3: Diagonal
    */    
-    public ArrayList<Integer> problemClassification(ArrayList<BufferedImage> completeImageArray) {
+    public ArrayList<Integer> problemClassification3x3(ArrayList<BufferedImage> completeImageArray, Integer type, String classType) {
+    	
+    	ArrayList<Integer> classificationArrayReturn = new ArrayList<Integer>();
+    	
+    	Integer constantChange = 0;
+    	Integer sub1From2 = 1;
+    	Integer sub2From1 = 2;
+    	Integer constantPix = 3;
+    	Integer reflect = 4;
+    	Integer add = 5;
+    	Integer noChange = 6;
+    	Integer nonConstantPix = 7;
+    	Integer rotate90 = 8;
     	
     	ArrayList<BufferedImage> imageArray = new ArrayList<BufferedImage>();
     	
     	ArrayList<Integer> classificationArray = new ArrayList<Integer>();
+    	for (int i = 0; i < 9; i++){
+    		classificationArray.add(0);
+    	}
     	
     	for (int i = 0; i < completeImageArray.size()-2; i+=3) {
     		imageArray.clear();
     		
+    		if (type == 1 | classType.equals("a")) {
+	    		imageArray.add(completeImageArray.get(i));
+	    		imageArray.add(completeImageArray.get(i+1));
+	    		imageArray.add(completeImageArray.get(i+2));
+    		}
+    		else if (type == 2) {
+    			if (i == 0) {
+    				imageArray.add(completeImageArray.get(0));
+    				imageArray.add(completeImageArray.get(3));
+        			imageArray.add(completeImageArray.get(6));
+    			}
+    			else if (i == 3) {
+    				imageArray.add(completeImageArray.get(1));
+    				imageArray.add(completeImageArray.get(4));
+        			imageArray.add(completeImageArray.get(7));
+    			}
+    		}
+    		else if (type == 3) {
+    			if (i == 0) {
+    				imageArray.add(completeImageArray.get(1));
+    				imageArray.add(completeImageArray.get(5));
+        			imageArray.add(completeImageArray.get(6));
+    			}
+    			else if (i == 3) {
+    				imageArray.add(completeImageArray.get(2));
+    				imageArray.add(completeImageArray.get(3));
+        			imageArray.add(completeImageArray.get(7));
+    			}
+    			
+    		}
     		
-    		imageArray.add(completeImageArray.get(i));
-    		imageArray.add(completeImageArray.get(i+1));
-    		imageArray.add(completeImageArray.get(i+2));
 	    	//Subtract scenario
 	    	BufferedImage subImage1 = subtractPixels(imageArray.get(0), imageArray.get(1));
 	    	BufferedImage subImage2 = subtractPixels(imageArray.get(1), imageArray.get(0));
@@ -2428,8 +2589,12 @@ public class Agent2 {
 	    	ArrayList<Double> percentRGBSubImage1Image3 = percentRGBtoTotalRGBOneImage(overlaySubImage1Image3, "RGB");
 	    	ArrayList<Double> percentRGBSubImage2Image3 = percentRGBtoTotalRGBOneImage(overlaySubImage2Image3, "RGB");
 	    	
-	    	if (percentRGBSubImage1Image3.get(0) >= percentRedClassification) classificationArray.add(2); 
-	    	if (percentRGBSubImage2Image3.get(0) >= percentRedClassification) classificationArray.add(3);
+	    	if (percentRGBSubImage1Image3.get(0) >= percentRedClassification) {
+	    		classificationArray.set(sub1From2, classificationArray.get(sub1From2)+1); 
+	    	}
+	    	if (percentRGBSubImage2Image3.get(0) >= percentRedClassification) {
+	    		classificationArray.set(sub2From1, classificationArray.get(sub2From1)+1);
+	    	}
 	
 	    	
 	    	//Only keep constant pixels
@@ -2440,12 +2605,17 @@ public class Agent2 {
 	    	
 	    	
 	    	ArrayList<Double> percentRGBconstantImageImage3 = percentRGBtoTotalRGBOneImage(overlayconstantImageImage3, "RGB");
-	    	if (percentRGBconstantImageImage3.get(0) >= percentRedClassification) classificationArray.add(4);
+	    	if (percentRGBconstantImageImage3.get(0) >= percentRedClassification) {
+	    		classificationArray.set(constantPix, classificationArray.get(constantPix)+1);
+	    	}
 	    	
 	    	
 	    	//Constant change
 	    	ArrayList<Integer> numPixelsChangeArray = numPixelsChange(imageArray);
-	    	if (Math.abs(numPixelsChangeArray.get(0)-numPixelsChangeArray.get(1)) < numPixelsDiffConstantChange) classificationArray.add(1);
+	    	if (Math.abs(numPixelsChangeArray.get(0)-numPixelsChangeArray.get(1)) < numPixelsDiffConstantChange) {
+	    		classificationArray.set(constantChange, classificationArray.get(constantChange)+1);
+	    		
+	    	}
 	    	
 	    	
 	    	
@@ -2471,7 +2641,10 @@ public class Agent2 {
 	    	if (sumPercentReflect < 0.01) classificationArray.add(5);*/
 	    	
 	    	
-	    	if (rgbPer12Reflect.get(0) >= percentRedClassification) classificationArray.add(5);
+	    	if (rgbPer12Reflect.get(0) >= percentRedClassification) {
+	    		classificationArray.set(reflect, classificationArray.get(reflect)+1);
+	    		
+	    	}
 	    	
 	    	
 	    	
@@ -2495,7 +2668,10 @@ public class Agent2 {
 	    	ArrayList<Double> percentRGBAddImageImage3 = percentRGBtoTotalRGBOneImage(overlayAddImagesImage3, "RGB");
 	    	
 
-	    	if (percentRGBAddImageImage3.get(0) >= percentRedClassification) classificationArray.add(6); 
+	    	if (percentRGBAddImageImage3.get(0) >= percentRedClassification) {
+	    		classificationArray.set(add, classificationArray.get(add)+1);
+	    		 
+	    	}
 	    	
 	    	
 	    	//No change
@@ -2517,8 +2693,12 @@ public class Agent2 {
 	    	ArrayList<Double> percentRGBNoChange23 = percentRGBtoTotalRGBOneImage(overlayNoChange23, "RGB");
 	    	
 	    	if ((percentRGBNoChange12.get(0) >= percentRedClassification) &
-	    			(percentRGBNoChange23.get(0) >= percentRedClassification)) 
-	    					classificationArray.add(7); 
+	    			(percentRGBNoChange23.get(0) >= percentRedClassification)) {
+	    		
+	    		classificationArray.set(noChange, classificationArray.get(noChange)+1);
+	    		
+	    	}
+	    					
     	
 	    	
 	    	
@@ -2530,12 +2710,44 @@ public class Agent2 {
 	    	
 	    	
 	    	ArrayList<Double> percentRGBNonConstantImageImage3 = percentRGBtoTotalRGBOneImage(overlayNonConstantImage3, "RGB");
-	    	if (percentRGBNonConstantImageImage3.get(0) >= percentRedClassification) classificationArray.add(8);
+	    	if (percentRGBNonConstantImageImage3.get(0) >= percentRedClassification) {
+	    		classificationArray.set(nonConstantPix, classificationArray.get(nonConstantPix)+1);
+	    		
+	    	}
+	    	
+	    	//Rotate 90 degrees////////////////
+		    BufferedImage rotateFigure1 = rotate90degrees(imageArray.get(0),1);   		
+				
+			BufferedImage overlayPixels12Rotate = overlayPixelsHighlight(rotateFigure1, imageArray.get(2), "RGB");
+		
+			overlayPixels12Rotate = removeTrailingPixels(overlayPixels12Rotate);
+				
+			File fileoverlayPixels12Rotate = new File("overlayPixels12Rotate.png");
+		    	
+		    try {
+		    	ImageIO.write(overlayPixels12Rotate, "png", fileoverlayPixels12Rotate);
+			} catch (IOException e) {}
+		    	
+		    ArrayList<Double> rgbPer12Rotate = percentRGBtoTotalRGBOneImage(overlayPixels12Rotate, "RGB");
+	    	
+		    if (rgbPer12Rotate.get(0) >= percentRedClassification) {
+		    	classificationArray.set(rotate90, classificationArray.get(rotate90)+1);   		
+		    }
 	    	
 	    	
     	}
+    	for (int i = 0; i < classificationArray.size(); i++) {
+    		if (classType.equals("p")) {
+    			if (classificationArray.get(i) > 1) classificationArrayReturn.add(i);
+    		}
+    		else if (classType.equals("a")) {
+    			if (classificationArray.get(i) > 0) classificationArrayReturn.add(i);
+    		}
+    		
+    	}
     	
-    	return classificationArray;
+    	
+    	return classificationArrayReturn;
     }
     
     
@@ -2683,6 +2895,221 @@ public class Agent2 {
     	}
     	else return false;
 
+    }
+    
+    //Problem Classification Comparison!!
+    ArrayList<Integer> probClassComp(ArrayList<BufferedImage> imageArray, 
+    		ArrayList<Integer> answersToCompare, RavensProblem problem, Integer type) {
+    	
+    	ArrayList<Integer> possibleAnswers = new ArrayList<Integer>();
+    
+		/**
+		* 0: Constant Change /
+	    * 1: Subtract image1 from image2 /
+	    * 2: Subtract image2 from image1 /
+	    * 3: Keep constant pixels /
+	    * 4: Reflection
+	    * 5: Add images
+	    * 6: No change
+	    * 7: Keep non-constant pixels
+	    */
+    	
+    	ArrayList<Integer> classArray = new ArrayList<Integer>();
+    	
+		if (problem.getProblemType().equals("3x3")) {
+			classArray = problemClassification3x3(imageArray, type, "p");
+		}
+		else if (problem.getProblemType().equals("2x2")) {
+			classArray = problemClassification2x2(imageArray, type);
+		}
+		System.out.println(classArray);
+		
+		if (classArray.size() > 0) {
+			
+			
+			
+			ArrayList<Integer> GHAnsClass = new ArrayList<Integer>();
+			
+			for (Integer i = 1; i < answersToCompare.size()+1; i++) {
+	    		
+	    		Integer currI = answersToCompare.get(i-1);
+	    		
+	    		RavensFigure figure = problem.getFigures().get(currI.toString());
+	    		BufferedImage figureImage = null;
+	    		try {
+					figureImage = ImageIO.read(new File(figure.getVisual()));
+				} catch (IOException e) {}
+	
+	    		ArrayList<BufferedImage> imageGHAnsArray = new ArrayList<BufferedImage>();
+	    		
+	    		
+	    		//Horizontal
+	    		if (type == 1) {
+	    			if (problem.getProblemType().equals("3x3")) {
+			    		imageGHAnsArray.add(imageArray.get(6));
+			    		imageGHAnsArray.add(imageArray.get(7));
+			    		imageGHAnsArray.add(figureImage);
+	    			}
+	    			else if (problem.getProblemType().equals("2x2")) {
+	    				imageGHAnsArray.add(imageArray.get(2));
+	    				imageGHAnsArray.add(figureImage);
+	    			}
+	    		}
+	    		//Vertical
+	    		if (type == 2) {
+	    			if (problem.getProblemType().equals("3x3")) {
+			    		imageGHAnsArray.add(imageArray.get(2));
+			    		imageGHAnsArray.add(imageArray.get(5));
+			    		imageGHAnsArray.add(figureImage);
+	    			}
+	    			else if (problem.getProblemType().equals("2x2")) {
+	    				imageGHAnsArray.add(imageArray.get(1));
+	    				imageGHAnsArray.add(figureImage);
+	    			}
+	    		}
+	    		//Diagonal
+	    		if (type == 3) {
+	    			if (problem.getProblemType().equals("3x3")) {
+			    		imageGHAnsArray.add(imageArray.get(0));
+			    		imageGHAnsArray.add(imageArray.get(4));
+			    		imageGHAnsArray.add(figureImage);
+	    			}
+	    			else if (problem.getProblemType().equals("2x2")) {
+	    				imageGHAnsArray.add(imageArray.get(1));
+	    				imageGHAnsArray.add(figureImage);
+	    			}
+	    		}
+	    		
+	    		
+	    		
+	    		if (problem.getProblemType().equals("3x3")) {
+	    			GHAnsClass = problemClassification3x3(imageGHAnsArray, type, "a");
+	    		}
+	    		else if (problem.getProblemType().equals("2x2")) {
+	    			GHAnsClass = problemClassification2x2(imageGHAnsArray, type);
+	    		}
+
+	    		System.out.println(i + ": " + GHAnsClass) ;
+	    		
+	    		if (GHAnsClass.size() >= classArray.size()) {
+	    			Integer numMatched = 0;
+	    			for (int j = 0; j < classArray.size(); j++) {
+	    				for (int k = 0; k < GHAnsClass.size(); k++) {
+	    					if (GHAnsClass.get(k) == classArray.get(j)) numMatched++;
+	    				}
+	    			}
+	    			
+	    			if (numMatched == classArray.size()) possibleAnswers.add(i);
+	    			
+	    		}
+			}
+			
+		}
+		
+		return possibleAnswers;
+		
+	}
+
+    /**
+     * RETURN
+     * 0: Reflection /
+     * 1: Rotate 90 Degrees /
+     * 2: Rotate 180 Degrees /
+     * 
+     * 
+     * TYPE
+     * 1: Horizontal
+     * 2: Vertical
+     * 3: Diagonal
+   */    
+    public ArrayList<Integer> problemClassification2x2(ArrayList<BufferedImage> completeImageArray, Integer type) {
+    	
+    	ArrayList<Integer> classificationArrayReturn = new ArrayList<Integer>();
+    	Integer reflect = 0;
+    	Integer rotate90 = 1;
+    	Integer rotate180 = 2;
+    	
+    	
+    	ArrayList<BufferedImage> imageArray = new ArrayList<BufferedImage>();
+    	
+    	ArrayList<Integer> classificationArray = new ArrayList<Integer>();
+    	for (int i = 0; i < 3; i++){
+    		classificationArray.add(0);
+    	}
+
+    		
+    		
+    	imageArray.add(completeImageArray.get(0));
+    	imageArray.add(completeImageArray.get(1));
+	   	
+	    	
+	    	
+	    //Reflection////////////////
+	    BufferedImage reflectVerFigure1 = reflectImageVertically(imageArray.get(0));   		
+			
+		BufferedImage overlayPixels12Reflect = overlayPixelsHighlight(reflectVerFigure1, imageArray.get(1), "RGB");
+	
+		overlayPixels12Reflect = removeTrailingPixels(overlayPixels12Reflect);
+			
+		File fileOverlayPixels12Reflect = new File("overlayPixels12Reflect.png");
+	    	
+	    try {
+	    	ImageIO.write(overlayPixels12Reflect, "png", fileOverlayPixels12Reflect);
+		} catch (IOException e) {}
+	    	
+	    ArrayList<Double> rgbPer12Reflect = percentRGBtoTotalRGBOneImage(overlayPixels12Reflect, "RGB");
+    	
+	    if (rgbPer12Reflect.get(0) >= percentRedClassification) {
+	    	classificationArray.set(reflect, classificationArray.get(reflect)+1);   		
+	    }
+	    
+	    //Rotate 90 degrees////////////////
+	    BufferedImage rotateFigure1 = rotate90degrees(imageArray.get(0),1);   		
+			
+		BufferedImage overlayPixels12Rotate = overlayPixelsHighlight(rotateFigure1, imageArray.get(1), "RGB");
+	
+		overlayPixels12Rotate = removeTrailingPixels(overlayPixels12Rotate);
+			
+		File fileoverlayPixels12Rotate = new File("overlayPixels12Rotate.png");
+	    	
+	    try {
+	    	ImageIO.write(overlayPixels12Rotate, "png", fileoverlayPixels12Rotate);
+		} catch (IOException e) {}
+	    	
+	    ArrayList<Double> rgbPer12Rotate = percentRGBtoTotalRGBOneImage(overlayPixels12Rotate, "RGB");
+    	
+	    if (rgbPer12Rotate.get(0) >= percentRedClassification) {
+	    	classificationArray.set(rotate90, classificationArray.get(rotate90)+1);   		
+	    }
+	    	
+	    //Rotate 180 degrees////////////////
+	    BufferedImage rotate180Figure1 = rotate90degrees(imageArray.get(0),2);   		
+			
+		BufferedImage overlayPixels12Rotate180 = overlayPixelsHighlight(rotate180Figure1, imageArray.get(1), "RGB");
+	
+		overlayPixels12Rotate180 = removeTrailingPixels(overlayPixels12Rotate180);
+			
+		File fileoverlayPixels12Rotate180 = new File("overlayPixels12Rotate180.png");
+	    	
+	    try {
+	    	ImageIO.write(overlayPixels12Rotate180, "png", fileoverlayPixels12Rotate180);
+		} catch (IOException e) {}
+	    	
+	    ArrayList<Double> rgbPer12Rotate180 = percentRGBtoTotalRGBOneImage(overlayPixels12Rotate180, "RGB");
+    	
+	    if (rgbPer12Rotate180.get(0) >= percentRedClassification) {
+	    	classificationArray.set(rotate180, classificationArray.get(rotate180)+1);   		
+	    }
+	    		
+	    	
+	    	
+    	for (int i = 0; i < classificationArray.size(); i++) {
+    		if (classificationArray.get(i) > 0) classificationArrayReturn.add(i);
+    	}
+
+    	
+    	
+    	return classificationArrayReturn;
     }
     
 }
